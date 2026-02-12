@@ -568,18 +568,58 @@
       style:             '1',
       locale:            'kr',
       toolbar_bg:        '#0d1017',
+      studies_overrides: {
+        'volume.volume.color.0': '#ff3a5c55',
+        'volume.volume.color.1': '#00e87a55',
+      },
       enable_publishing: false,
       hide_side_toolbar: false,
       container_id:      'tv_chart_container',
       loading_screen:    { backgroundColor: '#060810', foregroundColor: '#c8a84b' },
       favorites:         { intervals: [] },
       overrides: {
-        'paneProperties.background':                '#060810',
-        'paneProperties.backgroundType':            'solid',
-        'paneProperties.vertGridProperties.color':  '#0f1420',
-        'paneProperties.horzGridProperties.color':  '#0f1420',
-        'scalesProperties.textColor':               '#4e5a72',
-        'scalesProperties.lineColor':               '#1a2035',
+        /* ── Background ── */
+        'paneProperties.background':                           '#060810',
+        'paneProperties.backgroundGradientStartColor':         '#060810',
+        'paneProperties.backgroundGradientEndColor':           '#060810',
+        'paneProperties.backgroundType':                       'solid',
+
+        /* ── Grid ── */
+        'paneProperties.vertGridProperties.color':             '#0f1420',
+        'paneProperties.vertGridProperties.style':             1,
+        'paneProperties.horzGridProperties.color':             '#0f1420',
+        'paneProperties.horzGridProperties.style':             1,
+
+        /* ── Crosshair ── */
+        'paneProperties.crossHairProperties.color':            '#c8a84b',
+        'paneProperties.crossHairProperties.style':            1,
+        'paneProperties.crossHairProperties.width':            1,
+
+        /* ── Scales / Axes ── */
+        'scalesProperties.textColor':                          '#4e5a72',
+        'scalesProperties.lineColor':                          '#1a2035',
+        'scalesProperties.fontSize':                           11,
+        'scalesProperties.backgroundColor':                    '#060810',
+
+        /* ── Candles ── */
+        'mainSeriesProperties.candleStyle.upColor':            '#00e87a',
+        'mainSeriesProperties.candleStyle.downColor':          '#ff3a5c',
+        'mainSeriesProperties.candleStyle.borderUpColor':      '#00e87a',
+        'mainSeriesProperties.candleStyle.borderDownColor':    '#ff3a5c',
+        'mainSeriesProperties.candleStyle.wickUpColor':        '#00e87a80',
+        'mainSeriesProperties.candleStyle.wickDownColor':      '#ff3a5c80',
+        'mainSeriesProperties.candleStyle.barColorsOnPrevClose': false,
+
+        /* ── Volume ── */
+        'volume.volume.color.0':                               '#ff3a5c55',
+        'volume.volume.color.1':                               '#00e87a55',
+        'volume.volume ma.color':                              '#c8a84b',
+        'volume.volume ma.linewidth':                          1,
+        'volume.volume ma.visible':                            false,
+
+        /* ── Price line ── */
+        'mainSeriesProperties.priceLineColor':                 '#c8a84b',
+        'mainSeriesProperties.priceLineWidth':                 1,
       }
     });
   }
