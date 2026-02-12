@@ -1,289 +1,655 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Dashboard Pro</title>
-    
-    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRYPTEX — Live Markets</title>
 
-    <style>
-        :root {
-            --bg-body: #0b0e11;
-            --bg-card: #161a1e;
-            --bg-hover: #2b3139;
-            --border: #252930;
-            --text-primary: #eaecef;
-            --text-secondary: #848e9c;
-            --text-yellow: #fcd535;
-            --up: #0ecb81;
-            --down: #f6465d;
-        }
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-        * { box-sizing: border-box; }
+<style>
+  :root {
+    --bg-body:    #060810;
+    --bg-card:    #0d1017;
+    --bg-deep:    #090c13;
+    --bg-hover:   #141926;
+    --border:     #1a2035;
+    --border-dim: #0f1420;
+    --text-pri:   #d8dde8;
+    --text-sec:   #4e5a72;
+    --text-dim:   #2a3348;
+    --accent:     #c8a84b;
+    --accent-glow:#c8a84b40;
+    --up:         #00e87a;
+    --up-glow:    #00e87a30;
+    --down:       #ff3a5c;
+    --down-glow:  #ff3a5c30;
+    --mono:       'IBM Plex Mono', monospace;
+    --sans:       'Syne', sans-serif;
+  }
 
-        body {
-            margin: 0; padding: 0;
-            background-color: var(--bg-body);
-            color: var(--text-primary);
-            font-family: "Binance Plex", Arial, sans-serif;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        header {
-            height: 40px;
-            background-color: #181a20;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            justify-content: flex-end;
-            z-index: 100;
-        }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-body);
+    color: var(--text-pri);
+    font-family: var(--sans);
+  }
 
-        .ticker-bar {
-            height: 60px;
-            background-color: var(--bg-card);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            gap: 30px;
-            position: relative;
-        }
+  /* ── Dot-grid background ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: radial-gradient(circle, #1a2035 1px, transparent 1px);
+    background-size: 28px 28px;
+    opacity: .35;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-        /* 종목 선택기 */
-        .symbol-selector { position: relative; cursor: pointer; min-width: 140px; }
-        .current-symbol {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .current-symbol:hover { color: var(--text-yellow); }
+  /* ── Layout shell ── */
+  .shell {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
 
-        /* 시간 단위(Interval) 스타일 */
-        .interval-group {
-            display: flex;
-            gap: 5px;
-            border-left: 1px solid var(--border);
-            padding-left: 20px;
-        }
-        .interval-btn {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 0.85rem;
-            padding: 4px 8px;
-            border-radius: 4px;
-            transition: 0.2s;
-        }
-        .interval-btn:hover { background-color: var(--bg-hover); color: var(--text-primary); }
-        .interval-btn.active { color: var(--text-yellow); font-weight: bold; }
+  /* ══════════════════════════════
+     HEADER
+  ══════════════════════════════ */
+  header {
+    height: 44px;
+    background: rgba(9,12,19,.92);
+    border-bottom: 1px solid var(--border-dim);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    backdrop-filter: blur(12px);
+    flex-shrink: 0;
+  }
 
-        .dropdown-menu {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            margin-top: 10px;
-            width: 350px;
-            background-color: #1e2329;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            z-index: 999;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .dropdown-menu.show { display: block; }
+  .logo {
+    font-family: var(--sans);
+    font-weight: 800;
+    font-size: .9rem;
+    letter-spacing: .18em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .logo span { color: var(--text-sec); font-weight: 400; }
 
-        .menu-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 15px;
-            cursor: pointer;
-            border-bottom: 1px solid #252930;
-        }
-        .menu-item:hover { background-color: var(--bg-hover); }
+  .ws-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--mono);
+    font-size: .68rem;
+    color: var(--text-sec);
+    letter-spacing: .06em;
+    transition: color .4s;
+  }
+  .ws-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: background .4s, box-shadow .4s;
+  }
+  .ws-badge.connected .ws-dot {
+    background: var(--up);
+    box-shadow: 0 0 8px var(--up-glow);
+  }
+  .ws-badge.connected { color: var(--text-pri); }
 
-        .main-price-info { display: flex; align-items: center; gap: 20px; }
-        .main-price { font-size: 1.4rem; font-weight: bold; color: var(--up); font-family: 'Roboto', sans-serif;}
-        
-        .stat-group { display: flex; gap: 20px; }
-        .stat-box { display: flex; flex-direction: column; font-size: 0.75rem; color: var(--text-secondary); }
-        .stat-val { font-size: 0.8rem; color: var(--text-primary); margin-top: 3px; }
+  /* ══════════════════════════════
+     TICKER BAR
+  ══════════════════════════════ */
+  .ticker-bar {
+    height: 64px;
+    background: rgba(13,16,23,.96);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 0;
+    flex-shrink: 0;
+    position: relative;
+  }
 
-        .c-up { color: var(--up); }
-        .c-down { color: var(--down); }
+  /* Symbol selector */
+  .symbol-selector {
+    position: relative;
+    cursor: pointer;
+    padding-right: 24px;
+    border-right: 1px solid var(--border);
+    margin-right: 24px;
+    min-width: 170px;
+  }
 
-        .chart-container { flex: 1; background-color: var(--bg-body); position: relative; }
-        #tv_chart_container { width: 100%; height: 100%; }
+  .current-symbol {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
-    </style>
+  .sym-icon {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #7b611a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .55rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: #000;
+    flex-shrink: 0;
+    transition: transform .2s;
+  }
+  .symbol-selector:hover .sym-icon { transform: scale(1.1); }
+
+  .sym-texts { display: flex; flex-direction: column; }
+  .sym-pair {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-pri);
+    line-height: 1;
+    transition: color .2s;
+  }
+  .symbol-selector:hover .sym-pair { color: var(--accent); }
+  .sym-label {
+    font-family: var(--mono);
+    font-size: .58rem;
+    color: var(--text-sec);
+    letter-spacing: .1em;
+    margin-top: 3px;
+  }
+
+  .caret {
+    font-size: .7rem;
+    color: var(--text-sec);
+    margin-left: auto;
+    transition: transform .25s;
+  }
+  .symbol-selector.open .caret { transform: rotate(180deg); }
+
+  /* Dropdown */
+  .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 12px);
+    left: -12px;
+    width: 340px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.7), 0 0 0 1px var(--border-dim);
+    z-index: 9999;
+    overflow: hidden;
+    animation: dropIn .18s ease;
+  }
+  .dropdown-menu.show { display: block; }
+
+  @keyframes dropIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .dropdown-header {
+    padding: 10px 14px;
+    font-family: var(--mono);
+    font-size: .6rem;
+    letter-spacing: .14em;
+    color: var(--text-sec);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border-dim);
+  }
+
+  .menu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-dim);
+    transition: background .15s;
+    gap: 10px;
+  }
+  .menu-item:last-child { border-bottom: none; }
+  .menu-item:hover { background: var(--bg-hover); }
+
+  .item-left { display: flex; align-items: center; gap: 10px; }
+  .item-coin-icon {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .5rem;
+    font-weight: 700;
+    color: #000;
+    flex-shrink: 0;
+  }
+  .item-texts { display: flex; flex-direction: column; }
+  .item-sym {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: .8rem;
+    color: var(--text-pri);
+    line-height: 1;
+  }
+  .item-name {
+    font-family: var(--mono);
+    font-size: .6rem;
+    color: var(--text-sec);
+    margin-top: 2px;
+  }
+
+  .item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .item-price {
+    font-family: var(--mono);
+    font-size: .78rem;
+    font-weight: 500;
+    color: var(--text-pri);
+  }
+  .item-pct {
+    font-family: var(--mono);
+    font-size: .65rem;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .item-pct.up  { color: var(--up);   background: var(--up-glow); }
+  .item-pct.down{ color: var(--down); background: var(--down-glow); }
+
+  /* ── Interval buttons ── */
+  .interval-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 24px;
+    border-right: 1px solid var(--border);
+    margin-right: 24px;
+  }
+
+  .interval-btn {
+    background: none;
+    border: none;
+    color: var(--text-sec);
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .04em;
+    padding: 5px 9px;
+    border-radius: 4px;
+    transition: background .15s, color .15s;
+  }
+  .interval-btn:hover { background: var(--bg-hover); color: var(--text-pri); }
+  .interval-btn.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* ── Price display ── */
+  .price-block { display: flex; align-items: center; gap: 28px; }
+
+  .main-price-wrap { display: flex; flex-direction: column; gap: 2px; }
+  .price-tag {
+    font-family: var(--mono);
+    font-size: .55rem;
+    letter-spacing: .14em;
+    color: var(--text-sec);
+    text-transform: uppercase;
+  }
+  .main-price {
+    font-family: var(--mono);
+    font-size: 1.45rem;
+    font-weight: 600;
+    line-height: 1;
+    transition: color .3s;
+  }
+  .main-price.up   { color: var(--up); }
+  .main-price.down { color: var(--down); }
+
+  /* Flash animation on price update */
+  @keyframes flashUp {
+    0%   { text-shadow: 0 0 20px var(--up-glow); }
+    100% { text-shadow: none; }
+  }
+  @keyframes flashDown {
+    0%   { text-shadow: 0 0 20px var(--down-glow); }
+    100% { text-shadow: none; }
+  }
+  .flash-up   { animation: flashUp .5s ease; }
+  .flash-down { animation: flashDown .5s ease; }
+
+  .stats-row { display: flex; gap: 20px; }
+  .stat-cell { display: flex; flex-direction: column; gap: 3px; }
+  .stat-label {
+    font-family: var(--mono);
+    font-size: .56rem;
+    letter-spacing: .1em;
+    color: var(--text-sec);
+    text-transform: uppercase;
+  }
+  .stat-val {
+    font-family: var(--mono);
+    font-size: .75rem;
+    font-weight: 500;
+    color: var(--text-pri);
+  }
+  .stat-val.up   { color: var(--up); }
+  .stat-val.down { color: var(--down); }
+
+  /* ── Divider ── */
+  .vdiv {
+    width: 1px;
+    height: 32px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  /* ══════════════════════════════
+     CHART
+  ══════════════════════════════ */
+  .chart-container {
+    flex: 1;
+    position: relative;
+    background: var(--bg-body);
+    min-height: 0;
+  }
+  #tv_chart_container { width: 100%; height: 100%; }
+
+  /* ══════════════════════════════
+     COIN COLORS
+  ══════════════════════════════ */
+  .coin-btc  { background: linear-gradient(135deg,#f7931a,#9e5c0d); }
+  .coin-eth  { background: linear-gradient(135deg,#627eea,#3a4e9e); }
+  .coin-xrp  { background: linear-gradient(135deg,#00aae4,#006a8e); }
+  .coin-sol  { background: linear-gradient(135deg,#9945ff,#14f195); }
+  .coin-bnb  { background: linear-gradient(135deg,#f3ba2f,#9c7913); }
+  .coin-doge { background: linear-gradient(135deg,#c2a633,#7a6618); }
+  .coin-ada  { background: linear-gradient(135deg,#0033ad,#002270); }
+  .coin-pepe { background: linear-gradient(135deg,#4caf50,#2e7d32); }
+</style>
 </head>
 <body>
+<div class="shell">
 
-    <header>
-        <div style="font-size:0.75rem; color:#848e9c;">
-            <i class="fas fa-circle" style="color: #0ecb81; font-size: 0.5rem; vertical-align: middle; margin-right: 5px;"></i>
-            WebSocket Connected
-        </div>
-    </header>
+  <!-- HEADER -->
+  <header>
+    <div class="logo">CRYPT<span>EX</span></div>
+    <div class="ws-badge" id="ws-badge">
+      <div class="ws-dot" id="ws-dot"></div>
+      <span id="ws-text">CONNECTING...</span>
+    </div>
+  </header>
 
-    <div class="ticker-bar">
-        <div class="symbol-selector" id="symbol-btn">
-            <div class="current-symbol">
-                <span id="display-symbol">BTC/USDT</span> 
-                <i class="fas fa-caret-down"></i>
-            </div>
-            <div class="dropdown-menu" id="dropdown"></div>
-        </div>
+  <!-- TICKER BAR -->
+  <div class="ticker-bar">
 
-        <div class="interval-group" id="interval-group">
-            <button class="interval-btn" onclick="changeInterval('1')">1</button>
-            <button class="interval-btn" onclick="changeInterval('3')">3</button>
-            <button class="interval-btn" onclick="changeInterval('5')">5</button>
-            <button class="interval-btn" onclick="changeInterval('15')">15</button>
-            <button class="interval-btn" onclick="changeInterval('60')">1시간</button>
-            <button class="interval-btn" onclick="changeInterval('240')">4시간</button>
-            <button class="interval-btn active" onclick="changeInterval('D')">하루</button>
-            <button class="interval-btn" onclick="changeInterval('W')">주</button>
-            <button class="interval-btn" onclick="changeInterval('M')">달</button>
+    <!-- Symbol selector -->
+    <div class="symbol-selector" id="symbol-btn">
+      <div class="current-symbol">
+        <div class="sym-icon" id="sym-icon">BTC</div>
+        <div class="sym-texts">
+          <div class="sym-pair" id="display-symbol">BTC / USDT</div>
+          <div class="sym-label">PERPETUAL</div>
         </div>
+        <i class="fas fa-chevron-down caret"></i>
+      </div>
 
-        <div class="main-price-info">
-            <div class="main-price" id="display-price">0.00</div>
-            <div class="stat-group">
-                <div class="stat-box"><span>24h Change</span><span class="stat-val" id="display-change">0.00%</span></div>
-                <div class="stat-box"><span>24h High</span><span class="stat-val" id="display-high">0.00</span></div>
-                <div class="stat-box"><span>24h Low</span><span class="stat-val" id="display-low">0.00</span></div>
-            </div>
-        </div>
+      <div class="dropdown-menu" id="dropdown">
+        <div class="dropdown-header">Select Market</div>
+        <!-- items injected by JS -->
+      </div>
     </div>
 
-    <div class="chart-container">
-        <div id="tv_chart_container"></div>
+    <!-- Interval buttons -->
+    <div class="interval-group" id="interval-group">
+      <button class="interval-btn" data-iv="1"   onclick="changeInterval('1', this)">1m</button>
+      <button class="interval-btn" data-iv="3"   onclick="changeInterval('3', this)">3m</button>
+      <button class="interval-btn" data-iv="5"   onclick="changeInterval('5', this)">5m</button>
+      <button class="interval-btn" data-iv="15"  onclick="changeInterval('15', this)">15m</button>
+      <button class="interval-btn" data-iv="60"  onclick="changeInterval('60', this)">1H</button>
+      <button class="interval-btn" data-iv="240" onclick="changeInterval('240', this)">4H</button>
+      <button class="interval-btn active" data-iv="D" onclick="changeInterval('D', this)">1D</button>
+      <button class="interval-btn" data-iv="W"   onclick="changeInterval('W', this)">1W</button>
+      <button class="interval-btn" data-iv="M"   onclick="changeInterval('M', this)">1M</button>
     </div>
 
-    <script>
-        const coins = [
-            { id: 'btc', s: 'btcusdt', n: 'BTC', name:'Bitcoin', tv: 'BINANCE:BTCUSDT' },
-            { id: 'eth', s: 'ethusdt', n: 'ETH', name:'Ethereum', tv: 'BINANCE:ETHUSDT' },
-            { id: 'xrp', s: 'xrpusdt', n: 'XRP', name:'Ripple', tv: 'BINANCE:XRPUSDT' },
-            { id: 'sol', s: 'solusdt', n: 'SOL', name:'Solana', tv: 'BINANCE:SOLUSDT' },
-            { id: 'bnb', s: 'bnbusdt', n: 'BNB', name:'BNB', tv: 'BINANCE:BNBUSDT' },
-            { id: 'doge', s: 'dogeusdt', n: 'DOGE', name:'Dogecoin', tv: 'BINANCE:DOGEUSDT' },
-            { id: 'ada', s: 'adausdt', n: 'ADA', name:'Cardano', tv: 'BINANCE:ADAUSDT' },
-            { id: 'pepe', s: 'pepeusdt', n: 'PEPE', name:'Pepe', tv: 'BINANCE:PEPEUSDT' }
-        ];
+    <!-- Price + stats -->
+    <div class="price-block">
+      <div class="main-price-wrap">
+        <div class="price-tag">Last Price</div>
+        <div class="main-price up" id="display-price">—</div>
+      </div>
 
-        let currentCoin = coins[0];
-        let currentInterval = 'D'; // 기본값: 하루(Daily)
-        let tvWidget = null;
+      <div class="vdiv"></div>
 
-        // 드롭다운 생성
-        const dropdownEl = document.getElementById('dropdown');
-        coins.forEach(c => {
-            const item = document.createElement('div');
-            item.className = 'menu-item';
-            item.onclick = (e) => { e.stopPropagation(); selectCoin(c); };
-            item.innerHTML = `<div class="item-left"><span class="item-symbol">${c.n}/USDT</span><span class="item-name">${c.name}</span></div><div class="item-right"><div class="item-price" id="menu-price-${c.s}">-</div><div style="font-size:0.75rem; color:#848e9c;" id="menu-change-${c.s}">0.00%</div></div>`;
-            dropdownEl.appendChild(item);
-        });
+      <div class="stats-row">
+        <div class="stat-cell">
+          <div class="stat-label">24h Change</div>
+          <div class="stat-val" id="display-change">—</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">24h High</div>
+          <div class="stat-val" id="display-high">—</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">24h Low</div>
+          <div class="stat-val" id="display-low">—</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">24h Volume</div>
+          <div class="stat-val" id="display-vol">—</div>
+        </div>
+      </div>
+    </div>
 
-        // 메뉴 토글
-        const btn = document.getElementById('symbol-btn');
-        btn.addEventListener('click', () => dropdownEl.classList.toggle('show'));
-        document.addEventListener('click', (e) => { if (!btn.contains(e.target)) dropdownEl.classList.remove('show'); });
+  </div>
 
-        // 코인 선택
-        function selectCoin(coin) {
-            currentCoin = coin;
-            document.getElementById('display-symbol').innerText = `${coin.n}/USDT`;
-            loadChart(coin.tv, currentInterval);
-            dropdownEl.classList.remove('show');
-        }
+  <!-- CHART -->
+  <div class="chart-container">
+    <div id="tv_chart_container"></div>
+  </div>
 
-        // 시간 단위 변경 함수
-        function changeInterval(interval) {
-            currentInterval = interval;
-            
-            // 버튼 활성화 스타일 제어
-            const btns = document.querySelectorAll('.interval-btn');
-            btns.forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
+</div>
 
-            loadChart(currentCoin.tv, interval);
-        }
+<script>
+  /* ─── Coin definitions ─── */
+  const coins = [
+    { id:'btc',  s:'btcusdt',  n:'BTC',  name:'Bitcoin',  tv:'BINANCE:BTCUSDT',  cls:'coin-btc'  },
+    { id:'eth',  s:'ethusdt',  n:'ETH',  name:'Ethereum', tv:'BINANCE:ETHUSDT',  cls:'coin-eth'  },
+    { id:'xrp',  s:'xrpusdt',  n:'XRP',  name:'Ripple',   tv:'BINANCE:XRPUSDT',  cls:'coin-xrp'  },
+    { id:'sol',  s:'solusdt',  n:'SOL',  name:'Solana',   tv:'BINANCE:SOLUSDT',  cls:'coin-sol'  },
+    { id:'bnb',  s:'bnbusdt',  n:'BNB',  name:'BNB',      tv:'BINANCE:BNBUSDT',  cls:'coin-bnb'  },
+    { id:'doge', s:'dogeusdt', n:'DOGE', name:'Dogecoin', tv:'BINANCE:DOGEUSDT', cls:'coin-doge' },
+    { id:'ada',  s:'adausdt',  n:'ADA',  name:'Cardano',  tv:'BINANCE:ADAUSDT',  cls:'coin-ada'  },
+    { id:'pepe', s:'pepeusdt', n:'PEPE', name:'Pepe',     tv:'BINANCE:PEPEUSDT', cls:'coin-pepe' },
+  ];
 
-        // 차트 로드
-        function loadChart(symbol, interval) {
-            document.getElementById('tv_chart_container').innerHTML = "";
-            new TradingView.widget({
-                "autosize": true,
-                "symbol": symbol,
-                "interval": interval,
-                "timezone": "Asia/Seoul",
-                "theme": "dark",
-                "style": "1",
-                "locale": "kr",
-                "toolbar_bg": "#161a1e",
-                "enable_publishing": false,
-                "hide_side_toolbar": false,
-                "container_id": "tv_chart_container",
-                "overrides": {
-                    "paneProperties.background": "#0b0e11",
-                    "paneProperties.vertGridProperties.color": "#1e2329",
-                    "paneProperties.horzGridProperties.color": "#1e2329",
-                }
-            });
-        }
+  let currentCoin     = coins[0];
+  let currentInterval = 'D';
+  let tvWidget        = null;
+  let lastPrices      = {};
 
-        // 웹소켓 연결
-        const streams = coins.map(c => `${c.s}@ticker`).join('/');
-        const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
+  /* ─── Smart price formatter ─── */
+  function fmtPrice(p) {
+    if (p < 0.0001)   return p.toFixed(8);
+    if (p < 0.01)     return p.toFixed(6);
+    if (p < 1)        return p.toFixed(4);
+    if (p < 100)      return p.toFixed(3);
+    return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
 
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            const s = data.s.toLowerCase();
-            const p = parseFloat(data.c);   
-            const P = parseFloat(data.P);   
-            const color = P >= 0 ? 'c-up' : 'c-down';
-            const fmtPrice = p < 1 ? p.toFixed(5) : p.toLocaleString(undefined, {minimumFractionDigits:2});
-            const fmtPct = (P > 0 ? "+" : "") + P.toFixed(2) + "%";
+  function fmtVol(v) {
+    if (v >= 1e9) return (v/1e9).toFixed(2) + 'B';
+    if (v >= 1e6) return (v/1e6).toFixed(2) + 'M';
+    if (v >= 1e3) return (v/1e3).toFixed(2) + 'K';
+    return v.toFixed(0);
+  }
 
-            // 메뉴 업데이트
-            const menuPrice = document.getElementById(`menu-price-${s}`);
-            const menuChange = document.getElementById(`menu-change-${s}`);
-            if(menuPrice) {
-                menuPrice.innerText = fmtPrice;
-                menuPrice.className = `item-price ${color}`;
-                menuChange.innerText = fmtPct;
-                menuChange.className = color;
-            }
+  /* ─── Build dropdown ─── */
+  const dropdownEl = document.getElementById('dropdown');
+  coins.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'menu-item';
+    item.onclick = (e) => { e.stopPropagation(); selectCoin(c); };
+    item.innerHTML = `
+      <div class="item-left">
+        <div class="item-coin-icon ${c.cls}">${c.n.slice(0,3)}</div>
+        <div class="item-texts">
+          <div class="item-sym">${c.n} / USDT</div>
+          <div class="item-name">${c.name}</div>
+        </div>
+      </div>
+      <div class="item-right">
+        <div class="item-price" id="menu-price-${c.s}">—</div>
+        <div class="item-pct"   id="menu-pct-${c.s}">0.00%</div>
+      </div>`;
+    dropdownEl.appendChild(item);
+  });
 
-            // 상단 바 업데이트
-            if (s === currentCoin.s) {
-                const mainPrice = document.getElementById('display-price');
-                mainPrice.innerText = fmtPrice;
-                mainPrice.className = `main-price ${color}`;
-                document.getElementById('display-change').innerText = fmtPct;
-                document.getElementById('display-change').className = `stat-val ${color}`;
-                document.getElementById('display-high').innerText = parseFloat(data.h).toLocaleString();
-                document.getElementById('display-low').innerText = parseFloat(data.l).toLocaleString();
-            }
-        };
+  /* ─── Dropdown toggle ─── */
+  const symbolBtn = document.getElementById('symbol-btn');
+  symbolBtn.addEventListener('click', () => {
+    dropdownEl.classList.toggle('show');
+    symbolBtn.classList.toggle('open');
+  });
+  document.addEventListener('click', (e) => {
+    if (!symbolBtn.contains(e.target)) {
+      dropdownEl.classList.remove('show');
+      symbolBtn.classList.remove('open');
+    }
+  });
 
-        // 초기 로드
-        loadChart(currentCoin.tv, currentInterval);
-    </script>
+  /* ─── Select coin ─── */
+  function selectCoin(coin) {
+    currentCoin = coin;
+    document.getElementById('display-symbol').textContent = `${coin.n} / USDT`;
+    const icon = document.getElementById('sym-icon');
+    icon.textContent = coin.n.slice(0,3);
+    icon.className = `sym-icon ${coin.cls}`;
+    loadChart(coin.tv, currentInterval);
+    dropdownEl.classList.remove('show');
+    symbolBtn.classList.remove('open');
+    // reset top stats
+    ['display-price','display-change','display-high','display-low','display-vol']
+      .forEach(id => document.getElementById(id).textContent = '—');
+  }
+
+  /* ─── Change interval ─── */
+  function changeInterval(interval, btn) {
+    currentInterval = interval;
+    document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadChart(currentCoin.tv, interval);
+  }
+
+  /* ─── Load TradingView chart ─── */
+  function loadChart(symbol, interval) {
+    document.getElementById('tv_chart_container').innerHTML = '';
+    tvWidget = new TradingView.widget({
+      autosize:          true,
+      symbol:            symbol,
+      interval:          interval,
+      timezone:          'Asia/Seoul',
+      theme:             'dark',
+      style:             '1',
+      locale:            'kr',
+      toolbar_bg:        '#0d1017',
+      enable_publishing: false,
+      hide_side_toolbar: false,
+      container_id:      'tv_chart_container',
+      loading_screen:    { backgroundColor: '#060810', foregroundColor: '#c8a84b' },
+      overrides: {
+        'paneProperties.background':                '#060810',
+        'paneProperties.backgroundType':            'solid',
+        'paneProperties.vertGridProperties.color':  '#0f1420',
+        'paneProperties.horzGridProperties.color':  '#0f1420',
+        'scalesProperties.textColor':               '#4e5a72',
+        'scalesProperties.lineColor':               '#1a2035',
+      }
+    });
+  }
+
+  /* ─── WebSocket ─── */
+  const streams = coins.map(c => `${c.s}@ticker`).join('/');
+  const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
+
+  const badge   = document.getElementById('ws-badge');
+  const wsText  = document.getElementById('ws-text');
+
+  ws.onopen = () => {
+    badge.classList.add('connected');
+    wsText.textContent = 'LIVE';
+  };
+  ws.onclose = () => {
+    badge.classList.remove('connected');
+    wsText.textContent = 'DISCONNECTED';
+  };
+  ws.onerror = () => {
+    badge.classList.remove('connected');
+    wsText.textContent = 'ERROR';
+  };
+
+  ws.onmessage = (event) => {
+    const d = JSON.parse(event.data);
+    const s = d.s.toLowerCase();
+    const p = parseFloat(d.c);
+    const P = parseFloat(d.P);
+    const isUp   = P >= 0;
+    const dirCls = isUp ? 'up' : 'down';
+    const pctStr = (isUp ? '+' : '') + P.toFixed(2) + '%';
+
+    /* ── Dropdown row ── */
+    const mPrice = document.getElementById(`menu-price-${s}`);
+    const mPct   = document.getElementById(`menu-pct-${s}`);
+    if (mPrice) {
+      mPrice.textContent = fmtPrice(p);
+      mPrice.className   = `item-price ${dirCls}`;
+      mPct.textContent   = pctStr;
+      mPct.className     = `item-pct ${dirCls}`;
+    }
+
+    /* ── Top bar (current coin only) ── */
+    if (s !== currentCoin.s) return;
+
+    const priceEl = document.getElementById('display-price');
+    const prev    = lastPrices[s];
+
+    priceEl.textContent = fmtPrice(p);
+    priceEl.className   = `main-price ${dirCls}`;
+
+    /* flash effect */
+    if (prev !== undefined) {
+      priceEl.classList.remove('flash-up','flash-down');
+      void priceEl.offsetWidth; // reflow
+      priceEl.classList.add(p >= prev ? 'flash-up' : 'flash-down');
+    }
+    lastPrices[s] = p;
+
+    const changeEl = document.getElementById('display-change');
+    changeEl.textContent = pctStr;
+    changeEl.className   = `stat-val ${dirCls}`;
+
+    document.getElementById('display-high').textContent = fmtPrice(parseFloat(d.h));
+    document.getElementById('display-low').textContent  = fmtPrice(parseFloat(d.l));
+    document.getElementById('display-vol').textContent  = fmtVol(parseFloat(d.q)); // quote vol in USDT
+  };
+
+  /* ─── Initial chart load ─── */
+  loadChart(currentCoin.tv, currentInterval);
+</script>
 </body>
 </html>
