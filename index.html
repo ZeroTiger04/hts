@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Binance Fullscreen Pro</title>
+    <title>Binance Hybrid Pro</title>
     
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -11,14 +11,15 @@
     <style>
         :root {
             --bg-body: #0b0e11;
-            --bg-card: #161a1e;       /* 패널 배경 */
-            --bg-hover: #2b3139;      /* 호버 색상 */
+            --bg-card: #1e2329;
+            --bg-hover: #2b3139;
             --border: #252930;
             --text-primary: #eaecef;
             --text-secondary: #848e9c;
             --text-yellow: #fcd535;
             --up: #0ecb81;
             --down: #f6465d;
+            --tab-active-bg: #2b3139;
         }
 
         * { box-sizing: border-box; }
@@ -27,14 +28,14 @@
             margin: 0; padding: 0;
             background-color: var(--bg-body);
             color: var(--text-primary);
-            font-family: "Binance Plex", Arial, sans-serif;
+            font-family: "Binance Plex", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
-        /* 1. 최상단 글로벌 헤더 */
+        /* 헤더 */
         header {
             height: 50px;
             background-color: #181a20;
@@ -43,151 +44,151 @@
             align-items: center;
             padding: 0 20px;
             justify-content: space-between;
-            z-index: 100;
         }
 
         .logo {
             font-size: 1.2rem;
             font-weight: bold;
             color: var(--text-yellow);
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            display: flex; align-items: center; gap: 8px;
         }
 
-        /* 2. 정보 표시줄 (Ticker Bar) */
+        .market-type-badge {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-weight: bold;
+            background: #333;
+            color: #aaa;
+        }
+        .badge-spot { background: #fcd535; color: #000; }
+        .badge-future { background: #ff5500; color: #fff; }
+
+
+        /* 상단 정보바 (Ticker) */
         .ticker-bar {
             height: 60px;
-            background-color: var(--bg-card);
+            background-color: #161a1e;
             border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            gap: 20px;
-            position: relative; /* 드롭다운 위치 기준 */
-        }
-
-        /* 3. 종목 선택 드롭다운 (핵심) */
-        .symbol-selector {
+            display: flex; align-items: center;
+            padding: 0 20px; gap: 20px;
             position: relative;
-            cursor: pointer;
         }
 
-        .current-symbol {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        /* 종목 선택기 */
+        .symbol-selector { position: relative; cursor: pointer; }
+        .current-symbol-box {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 1.4rem; font-weight: bold; color: var(--text-primary);
         }
+        .current-symbol-box:hover { color: var(--text-yellow); }
 
-        .current-symbol:hover { color: var(--text-yellow); }
-        .current-symbol i { font-size: 0.8rem; color: var(--text-secondary); }
-
-        /* 드롭다운 메뉴 박스 */
+        /* 드롭다운 메뉴 (탭 포함) */
         .dropdown-menu {
-            display: none; /* 평소엔 숨김 */
-            position: absolute;
-            top: 100%;
-            left: 0;
-            margin-top: 10px;
-            width: 350px;
-            background-color: #1e2329;
+            display: none;
+            position: absolute; top: 100%; left: 0; margin-top: 10px;
+            width: 400px;
+            background-color: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 4px;
             box-shadow: 0 10px 20px rgba(0,0,0,0.5);
             z-index: 999;
+        }
+        .dropdown-menu.show { display: block; }
+
+        /* 탭 버튼 영역 */
+        .tab-header {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            transition: 0.2s;
+        }
+        .tab-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+        .tab-btn.active {
+            color: var(--text-yellow);
+            border-bottom: 2px solid var(--text-yellow);
+            background: var(--tab-active-bg);
+        }
+
+        /* 리스트 영역 */
+        .coin-list-container {
             max-height: 400px;
             overflow-y: auto;
         }
+        .coin-list { display: none; } /* 기본 숨김 */
+        .coin-list.active { display: block; } /* 선택된 탭만 보임 */
 
-        .dropdown-menu.show { display: block; } /* 클래스 추가시 보임 */
-
-        /* 드롭다운 내부 리스트 아이템 */
         .menu-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 15px;
-            cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 15px; cursor: pointer;
             border-bottom: 1px solid #252930;
         }
         .menu-item:hover { background-color: var(--bg-hover); }
 
-        .item-left { display: flex; flex-direction: column; }
-        .item-symbol { font-weight: bold; font-size: 0.95rem; }
-        .item-name { font-size: 0.75rem; color: var(--text-secondary); }
-        
-        .item-right { text-align: right; }
-        .item-price { font-family: 'Roboto', sans-serif; font-weight: 500; }
-        
-        /* 메인 가격 정보 */
-        .main-price-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        .main-price { font-size: 1.4rem; font-weight: bold; color: var(--up); font-family: 'Roboto', sans-serif;}
-        
-        .stat-group {
-            display: flex;
-            gap: 20px;
-        }
+        /* 가격 정보 */
+        .main-price { font-size: 1.4rem; font-weight: bold; font-family: 'Roboto', sans-serif; }
+        .stat-group { display: flex; gap: 20px; }
         .stat-box { display: flex; flex-direction: column; font-size: 0.75rem; color: var(--text-secondary); }
         .stat-val { font-size: 0.8rem; color: var(--text-primary); margin-top: 3px; }
 
-        /* 색상 유틸리티 */
         .c-up { color: var(--up); }
         .c-down { color: var(--down); }
 
-        /* 4. 차트 영역 (전체 화면 채우기) */
-        .chart-container {
-            flex: 1; /* 남은 공간 모두 차지 */
-            background-color: var(--bg-body);
-            position: relative;
-        }
-        
-        #tv_chart_container {
-            width: 100%;
-            height: 100%;
-        }
+        /* 차트 영역 */
+        .chart-container { flex: 1; position: relative; background: var(--bg-body); }
+        #tv_chart_container { width: 100%; height: 100%; }
 
     </style>
 </head>
 <body>
 
     <header>
-        <div class="logo"><i class="fas fa-layer-group"></i> BINANCE PRO</div>
-        <div style="font-size:0.8rem; color:#666;">Real-time WebSocket Connected</div>
+        <div class="logo">
+            <i class="fas fa-chart-network"></i> BINANCE <span style="color:#fff; font-weight:normal;">HYBRID</span>
+        </div>
+        <div style="font-size:0.8rem; color:#666;">
+            <i class="fas fa-wifi" style="color:var(--up)"></i> Real-time Data
+        </div>
     </header>
 
     <div class="ticker-bar">
-        
         <div class="symbol-selector" id="symbol-btn">
-            <div class="current-symbol">
-                <span id="display-symbol">BTC/USDT</span> 
-                <i class="fas fa-caret-down"></i>
+            <div class="current-symbol-box">
+                <span id="display-symbol">BTC/USDT</span>
+                <span id="market-badge" class="market-type-badge badge-spot">SPOT</span>
+                <i class="fas fa-caret-down" style="font-size:0.8rem; color:#888;"></i>
             </div>
 
             <div class="dropdown-menu" id="dropdown">
+                <div class="tab-header">
+                    <button class="tab-btn active" onclick="switchTab('spot')">현물 (Spot)</button>
+                    <button class="tab-btn" onclick="switchTab('future')">선물 (Futures)</button>
                 </div>
+                
+                <div id="list-spot" class="coin-list-container coin-list active">
+                    </div>
+                
+                <div id="list-future" class="coin-list-container coin-list">
+                    </div>
+            </div>
         </div>
 
-        <div class="main-price-info">
+        <div style="display:flex; align-items:center; gap:20px;">
             <div class="main-price" id="display-price">0.00</div>
             <div class="stat-group">
-                <div class="stat-box">
-                    <span>24h Change</span>
-                    <span class="stat-val" id="display-change">0.00%</span>
-                </div>
-                <div class="stat-box">
-                    <span>24h High</span>
-                    <span class="stat-val" id="display-high">0.00</span>
-                </div>
-                <div class="stat-box">
-                    <span>24h Low</span>
-                    <span class="stat-val" id="display-low">0.00</span>
-                </div>
+                <div class="stat-box"><span>Change</span><span class="stat-val" id="display-change">0.00%</span></div>
+                <div class="stat-box"><span>High</span><span class="stat-val" id="display-high">0.00</span></div>
+                <div class="stat-box"><span>Low</span><span class="stat-val" id="display-low">0.00</span></div>
             </div>
         </div>
     </div>
@@ -197,76 +198,108 @@
     </div>
 
     <script>
-        // --- 데이터 정의 ---
-        const coins = [
-            { id: 'btc', s: 'btcusdt', n: 'BTC', name:'Bitcoin', tv: 'BINANCE:BTCUSDT' },
-            { id: 'eth', s: 'ethusdt', n: 'ETH', name:'Ethereum', tv: 'BINANCE:ETHUSDT' },
-            { id: 'xrp', s: 'xrpusdt', n: 'XRP', name:'Ripple', tv: 'BINANCE:XRPUSDT' },
-            { id: 'sol', s: 'solusdt', n: 'SOL', name:'Solana', tv: 'BINANCE:SOLUSDT' },
-            { id: 'bnb', s: 'bnbusdt', n: 'BNB', name:'BNB', tv: 'BINANCE:BNBUSDT' },
-            { id: 'doge', s: 'dogeusdt', n: 'DOGE', name:'Dogecoin', tv: 'BINANCE:DOGEUSDT' },
-            { id: 'ada', s: 'adausdt', n: 'ADA', name:'Cardano', tv: 'BINANCE:ADAUSDT' },
-            { id: 'pepe', s: 'pepeusdt', n: 'PEPE', name:'Pepe', tv: 'BINANCE:PEPEUSDT' }
+        // --- 1. 데이터 정의 (현물 vs 선물) ---
+        // tv: 트레이딩뷰 심볼 (현물은 그냥, 선물은 .P 붙음)
+        const spotCoins = [
+            { id: 'btc', s: 'btcusdt', n: 'BTC', tv: 'BINANCE:BTCUSDT' },
+            { id: 'eth', s: 'ethusdt', n: 'ETH', tv: 'BINANCE:ETHUSDT' },
+            { id: 'xrp', s: 'xrpusdt', n: 'XRP', tv: 'BINANCE:XRPUSDT' },
+            { id: 'sol', s: 'solusdt', n: 'SOL', tv: 'BINANCE:SOLUSDT' },
+            { id: 'bnb', s: 'bnbusdt', n: 'BNB', tv: 'BINANCE:BNBUSDT' },
+            { id: 'doge', s: 'dogeusdt', n: 'DOGE', tv: 'BINANCE:DOGEUSDT' }
         ];
 
-        let currentCoin = coins[0];
+        const futureCoins = [
+            { id: 'btc', s: 'btcusdt', n: 'BTC', tv: 'BINANCE:BTCUSDT.P' }, // 선물 심볼 (.P)
+            { id: 'eth', s: 'ethusdt', n: 'ETH', tv: 'BINANCE:ETHUSDT.P' },
+            { id: 'xrp', s: 'xrpusdt', n: 'XRP', tv: 'BINANCE:XRPUSDT.P' },
+            { id: 'sol', s: 'solusdt', n: 'SOL', tv: 'BINANCE:SOLUSDT.P' },
+            { id: 'pepe', s: '1000pepeusdt', n: '1000PEPE', tv: 'BINANCE:1000PEPEUSDT.P' }, // 선물 전용
+            { id: 'wif', s: 'wifusdt', n: 'WIF', tv: 'BINANCE:WIFUSDT.P' }
+        ];
+
+        // 현재 상태
+        let currentType = 'spot'; // 'spot' or 'future'
+        let currentCoin = spotCoins[0];
         let tvWidget = null;
 
-        // --- 1. 드롭다운 메뉴 생성 ---
-        const dropdownEl = document.getElementById('dropdown');
-        
-        coins.forEach(c => {
-            const item = document.createElement('div');
-            item.className = 'menu-item';
-            item.onclick = (e) => {
-                e.stopPropagation(); // 이벤트 버블링 방지
-                selectCoin(c);
-            };
-
-            item.innerHTML = `
-                <div class="item-left">
-                    <span class="item-symbol">${c.n}/USDT</span>
-                    <span class="item-name">${c.name}</span>
-                </div>
-                <div class="item-right">
-                    <div class="item-price" id="menu-price-${c.s}">-</div>
-                    <div style="font-size:0.75rem; color:#848e9c;" id="menu-change-${c.s}">0.00%</div>
-                </div>
-            `;
-            dropdownEl.appendChild(item);
-        });
-
-        // --- 2. 메뉴 토글 (열고 닫기) ---
-        const btn = document.getElementById('symbol-btn');
-        btn.addEventListener('click', () => {
-            dropdownEl.classList.toggle('show');
-        });
-
-        // 화면 다른 곳 클릭하면 메뉴 닫기
-        document.addEventListener('click', (e) => {
-            if (!btn.contains(e.target)) {
-                dropdownEl.classList.remove('show');
-            }
-        });
-
-        // --- 3. 코인 선택 시 실행 함수 ---
-        function selectCoin(coin) {
-            currentCoin = coin;
+        // --- 2. 초기화: 리스트 만들기 ---
+        function createList(type, coins, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = "";
             
-            // 헤더 텍스트 변경
+            coins.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'menu-item';
+                // 클릭 시 해당 코인으로 변경
+                item.onclick = (e) => {
+                    e.stopPropagation();
+                    selectCoin(c, type);
+                };
+
+                // ID 생성 규칙: price-spot-btcusdt / price-future-btcusdt
+                const priceId = `price-${type}-${c.s}`;
+                const changeId = `change-${type}-${c.s}`;
+
+                item.innerHTML = `
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-weight:bold; font-size:0.95rem;">${c.n}/USDT</span>
+                        <span style="font-size:0.75rem; color:#666;">${type === 'spot' ? 'Spot' : 'Perp'}</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <div id="${priceId}" style="font-family:'Roboto'; font-weight:500;">-</div>
+                        <div id="${changeId}" style="font-size:0.75rem;">0.00%</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        createList('spot', spotCoins, 'list-spot');
+        createList('future', futureCoins, 'list-future');
+
+        // --- 3. 탭 전환 기능 ---
+        window.switchTab = function(type) {
+            // 버튼 스타일
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // 리스트 표시 전환
+            document.getElementById('list-spot').classList.remove('active');
+            document.getElementById('list-future').classList.remove('active');
+            document.getElementById(`list-${type}`).classList.add('active');
+        }
+
+        // --- 4. 코인 선택 기능 ---
+        function selectCoin(coin, type) {
+            currentCoin = coin;
+            currentType = type;
+
+            // 헤더 업데이트
             document.getElementById('display-symbol').innerText = `${coin.n}/USDT`;
             
-            // 차트 변경
+            // 뱃지 업데이트
+            const badge = document.getElementById('market-badge');
+            if(type === 'spot') {
+                badge.innerText = "SPOT";
+                badge.className = "market-type-badge badge-spot";
+            } else {
+                badge.innerText = "PERP"; // Perpetual (무기한 선물)
+                badge.className = "market-type-badge badge-future";
+            }
+
+            // 드롭다운 닫기
+            document.getElementById('dropdown').classList.remove('show');
+
+            // 차트 새로고침
             loadChart(coin.tv);
             
-            // 메뉴 닫기
-            dropdownEl.classList.remove('show');
-            
-            // 헤더 정보 리셋 (로딩 느낌)
+            // 가격 정보 초기화 (로딩 효과)
             document.getElementById('display-price').style.color = '#eaecef';
         }
 
-        // --- 4. 차트 로드 (트레이딩뷰) ---
+        // --- 5. 차트 로드 ---
         function loadChart(symbol) {
             if(document.getElementById('tv_chart_container').innerHTML !== "") {
                 document.getElementById('tv_chart_container').innerHTML = "";
@@ -284,6 +317,7 @@
                 "enable_publishing": false,
                 "hide_side_toolbar": false,
                 "container_id": "tv_chart_container",
+                "studies": [ "RSI@tv-basicstudies" ], // RSI 기본 탑재
                 "overrides": {
                     "paneProperties.background": "#0b0e11",
                     "paneProperties.vertGridProperties.color": "#1e2329",
@@ -292,50 +326,74 @@
             });
         }
 
-        // --- 5. 실시간 데이터 (WebSocket) ---
-        const streams = coins.map(c => `${c.s}@ticker`).join('/');
-        const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
+        // --- 6. 드롭다운 토글 ---
+        const btn = document.getElementById('symbol-btn');
+        const dropdown = document.getElementById('dropdown');
+        btn.addEventListener('click', () => dropdown.classList.toggle('show'));
+        document.addEventListener('click', (e) => {
+            if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
 
-        ws.onmessage = (event) => {
+        // --- 7. WebSocket 연결 (두 개 동시 실행) ---
+        
+        // (A) 현물 소켓 (Spot)
+        const spotStreams = spotCoins.map(c => `${c.s}@ticker`).join('/');
+        const spotWS = new WebSocket(`wss://stream.binance.com:9443/ws/${spotStreams}`);
+
+        spotWS.onmessage = (e) => handleMessage(e, 'spot');
+
+        // (B) 선물 소켓 (Futures) - 주소가 다름! (fstream)
+        const futureStreams = futureCoins.map(c => `${c.s}@ticker`).join('/');
+        const futureWS = new WebSocket(`wss://fstream.binance.com/ws/${futureStreams}`);
+
+        futureWS.onmessage = (e) => handleMessage(e, 'future');
+
+
+        // --- 공통 데이터 처리 함수 ---
+        function handleMessage(event, type) {
             const data = JSON.parse(event.data);
-            const s = data.s.toLowerCase(); // symbol
-            const p = parseFloat(data.c);   // price
-            const P = parseFloat(data.P);   // percent
-            const h = parseFloat(data.h);   // high
-            const l = parseFloat(data.l);   // low
+            const s = data.s.toLowerCase(); // 심볼
+            const p = parseFloat(data.c);   // 가격
+            const P = parseFloat(data.P);   // 변동률
+            const h = parseFloat(data.h);
+            const l = parseFloat(data.l);
 
-            // 가격 포맷팅 (가격이 낮으면 소수점 많이)
             const fmtPrice = p < 1 ? p.toFixed(5) : p.toLocaleString(undefined, {minimumFractionDigits:2});
             const fmtPct = (P > 0 ? "+" : "") + P.toFixed(2) + "%";
             const color = P >= 0 ? 'c-up' : 'c-down';
 
-            // A. 드롭다운 메뉴 안의 숫자 업데이트
-            const menuPrice = document.getElementById(`menu-price-${s}`);
-            const menuChange = document.getElementById(`menu-change-${s}`);
-            if(menuPrice) {
-                menuPrice.innerText = fmtPrice;
-                menuPrice.className = `item-price ${color}`;
-                menuChange.innerText = fmtPct;
-                menuChange.className = color;
+            // 1. 드롭다운 리스트 업데이트
+            // ID: price-spot-btcusdt 또는 price-future-btcusdt
+            const listPrice = document.getElementById(`price-${type}-${s}`);
+            const listChange = document.getElementById(`change-${type}-${s}`);
+            
+            if(listPrice) {
+                listPrice.innerText = fmtPrice;
+                listPrice.className = color;
+                listChange.innerText = fmtPct;
+                listChange.className = color;
             }
 
-            // B. 현재 보고 있는 코인이면 -> 상단 메인 바 업데이트
-            if (s === currentCoin.s) {
+            // 2. 현재 메인 화면에 띄운 코인이면 상단 바 업데이트
+            // (타입도 같고, 심볼도 같아야 함)
+            if (type === currentType && s === currentCoin.s) {
                 const mainPrice = document.getElementById('display-price');
                 mainPrice.innerText = fmtPrice;
-                mainPrice.className = `main-price ${color}`; // 가격 색상 변경
+                mainPrice.className = `main-price ${color}`;
 
                 const mainChange = document.getElementById('display-change');
                 mainChange.innerText = fmtPct;
                 mainChange.className = `stat-val ${color}`;
-
-                document.getElementById('display-high').innerText = h < 1 ? h.toFixed(5) : h.toLocaleString();
-                document.getElementById('display-low').innerText = l < 1 ? l.toFixed(5) : l.toLocaleString();
+                
+                document.getElementById('display-high').innerText = h.toLocaleString();
+                document.getElementById('display-low').innerText = l.toLocaleString();
             }
-        };
+        }
 
         // 초기 실행
-        loadChart(currentCoin.tv);
+        loadChart(spotCoins[0].tv);
 
     </script>
 </body>
