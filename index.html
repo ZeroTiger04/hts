@@ -3,75 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZeroTiger Hybrid</title>
+    <title>ZeroTiger Live</title>
     
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        /* CSS 리셋 (덮어쓰기 방지) */
-        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+        /* CSS 리셋 */
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #0b0e11; }
+        * { box-sizing: border-box; }
 
         :root {
-            --bg-body: #0b0e11;
-            --bg-card: #1e2329;
-            --bg-hover: #2b3139;
-            --border: #252930;
-            --text-primary: #eaecef;
-            --text-secondary: #848e9c;
-            --text-yellow: #fcd535;
-            --up: #0ecb81;
-            --down: #f6465d;
+            --bg-body: #0b0e11; --bg-card: #1e2329; --bg-hover: #2b3139;
+            --border: #252930; --text-primary: #eaecef; --text-secondary: #848e9c;
+            --text-yellow: #fcd535; --up: #0ecb81; --down: #f6465d;
         }
 
-        body {
-            background-color: var(--bg-body);
-            color: var(--text-primary);
-            font-family: -apple-system, BlinkMacSystemFont, "Binance Plex", Arial, sans-serif;
-            display: flex; flex-direction: column;
-        }
+        body { color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; display: flex; flex-direction: column; }
 
-        /* 1. 헤더 */
-        header {
-            height: 50px; flex-shrink: 0;
-            background-color: #181a20; border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; padding: 0 20px; justify-content: space-between;
-            z-index: 50;
-        }
+        /* 헤더 & 티커바 */
+        header { height: 50px; background: #181a20; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; flex-shrink: 0; }
         .logo { font-size: 1.3rem; font-weight: bold; color: var(--text-yellow); display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* 2. 티커 바 */
-        .ticker-bar {
-            height: 60px; flex-shrink: 0;
-            background-color: #161a1e; border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; padding: 0 20px; gap: 20px; position: relative;
-            z-index: 40;
-        }
+        .ticker-bar { height: 60px; background: #161a1e; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 20px; position: relative; flex-shrink: 0; z-index: 50; }
 
-        /* 종목 선택 버튼 */
+        /* 종목 선택 */
         .symbol-selector { position: relative; cursor: pointer; }
         .current-symbol-box { display: flex; align-items: center; gap: 10px; font-size: 1.4rem; font-weight: bold; }
         .current-symbol-box:hover { color: var(--text-yellow); }
         .market-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #333; color: #aaa; }
-        .badge-spot { background: #fcd535; color: #000; }
+        .badge-spot { background: #fcd535; color: #000; } 
         .badge-future { background: #ff5500; color: #fff; }
 
-        /* 드롭다운 메뉴 (최상위 z-index) */
-        .dropdown-menu {
-            display: none; position: absolute; top: 100%; left: 0; margin-top: 10px; width: 350px;
-            background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 4px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.8); z-index: 1000;
-        }
+        /* 드롭다운 */
+        .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; margin-top: 10px; width: 350px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 10px 20px rgba(0,0,0,0.8); z-index: 1000; }
         .dropdown-menu.show { display: block; }
-        
         .tab-header { display: flex; border-bottom: 1px solid var(--border); }
         .tab-btn { flex: 1; padding: 12px; cursor: pointer; font-weight: bold; color: var(--text-secondary); background: transparent; border: none; }
         .tab-btn.active { color: var(--text-yellow); border-bottom: 2px solid var(--text-yellow); background: var(--bg-hover); }
-        
         .coin-list-container { max-height: 400px; overflow-y: auto; display: none; }
         .coin-list-container.active { display: block; }
         .menu-item { display: flex; justify-content: space-between; padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #252930; }
-        .menu-item:hover { background-color: var(--bg-hover); }
+        .menu-item:hover { background: var(--bg-hover); }
 
         /* 가격 정보 */
         .main-price { font-size: 1.4rem; font-weight: bold; font-family: 'Roboto', sans-serif; }
@@ -80,16 +53,13 @@
         .stat-val { font-size: 0.8rem; color: var(--text-primary); margin-top: 3px; }
         .c-up { color: var(--up); } .c-down { color: var(--down); }
 
-        /* 3. 차트 영역 (z-index 낮춤) */
-        .chart-layout {
-            flex: 1; display: flex; flex-direction: column; background-color: var(--bg-body); 
-            position: relative; z-index: 1; overflow: hidden;
-        }
+        /* 차트 영역 */
+        .chart-layout { flex: 1; display: flex; flex-direction: column; position: relative; z-index: 1; }
         #chart-area { flex: 4; width: 100%; position: relative; }
         #rsi-area { flex: 1; width: 100%; border-top: 1px solid var(--border); position: relative; }
-
-        /* 로딩 & 범례 */
-        .loading-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666; font-size: 1rem; z-index: 10; pointer-events: none;}
+        
+        /* 로딩 메시지 */
+        .loading-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666; font-size: 1rem; z-index: 10; pointer-events: none; }
         .legend { position: absolute; top: 10px; left: 10px; z-index: 5; font-size: 11px; font-family: 'Roboto'; pointer-events: none; }
         .legend-item { margin-right: 8px; font-weight: bold; }
 
@@ -99,7 +69,7 @@
 
     <header>
         <div class="logo"><i class="fas fa-paw"></i> ZeroTiger</div>
-        <div style="font-size:0.8rem; color:#666;">Hybrid Engine V2</div>
+        <div style="font-size:0.8rem; color:#666;">Fail-Safe Engine</div>
     </header>
 
     <div class="ticker-bar">
@@ -119,7 +89,7 @@
             </div>
         </div>
         <div style="display:flex; align-items:center; gap:20px;">
-            <div class="main-price" id="display-price">0.00</div>
+            <div class="main-price" id="display-price">---</div>
             <div class="stat-group">
                 <div class="stat-box"><span>Change</span><span class="stat-val" id="display-change">0.00%</span></div>
                 <div class="stat-box"><span>High</span><span class="stat-val" id="display-high">0.00</span></div>
@@ -129,7 +99,7 @@
     </div>
 
     <div class="chart-layout">
-        <div id="loading" class="loading-msg">Connecting to CoinGecko & Binance...</div>
+        <div id="loading" class="loading-msg">Connecting...</div>
         <div id="chart-area">
             <div class="legend">
                 <span class="legend-item" style="color:#ffa500">EMA(20)</span>
@@ -146,14 +116,13 @@
     </div>
 
     <script>
-        // --- 1. 차트 설정 ---
+        // --- 1. 차트 엔진 생성 ---
         const chartProps = {
             layout: { background: { color: '#0b0e11' }, textColor: '#848e9c' },
             grid: { vertLines: { color: '#1e2329' }, horzLines: { color: '#1e2329' } },
             timeScale: { timeVisible: true, borderColor: '#252930' },
             crosshair: { mode: 1 },
         };
-
         const mainChart = LightweightCharts.createChart(document.getElementById('chart-area'), {
             ...chartProps, rightPriceScale: { borderColor: '#252930', scaleMargins: { top: 0.1, bottom: 0.1 } }
         });
@@ -161,143 +130,124 @@
             ...chartProps, rightPriceScale: { borderColor: '#252930' }, timeScale: { visible: false }
         });
 
-        const candleSeries = mainChart.addCandlestickSeries({
-            upColor: '#0ecb81', downColor: '#f6465d',
-            borderUpColor: '#0ecb81', borderDownColor: '#f6465d',
-            wickUpColor: '#0ecb81', wickDownColor: '#f6465d',
-        });
-
+        const candleSeries = mainChart.addCandlestickSeries({ upColor: '#0ecb81', downColor: '#f6465d', borderUpColor: '#0ecb81', borderDownColor: '#f6465d', wickUpColor: '#0ecb81', wickDownColor: '#f6465d' });
         const ema20 = mainChart.addLineSeries({ color: '#ffa500', lineWidth: 1, priceScaleId: 'right' });
         const ema60 = mainChart.addLineSeries({ color: '#00ff00', lineWidth: 1, priceScaleId: 'right' });
         const ema120 = mainChart.addLineSeries({ color: '#ff0000', lineWidth: 1, priceScaleId: 'right' });
         const ema200 = mainChart.addLineSeries({ color: '#0088ff', lineWidth: 1, priceScaleId: 'right' });
-        
         const rsiSeries = rsiChart.addLineSeries({ color: '#9e55ff', lineWidth: 1 });
         rsiChart.createPriceLine({ price: 70, color: '#888', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
         rsiChart.createPriceLine({ price: 30, color: '#888', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
 
-        mainChart.timeScale().subscribeVisibleTimeRangeChange((range) => { rsiChart.timeScale().setVisibleRange(range); });
-        
-        // 리사이즈
-        function resize() {
-            if(document.body.clientWidth === 0) return;
-            const w = document.body.clientWidth;
-            const h = document.body.clientHeight - 110; // 헤더 높이 제외
-            mainChart.resize(w, h * 0.8);
-            rsiChart.resize(w, h * 0.2);
-        }
-        window.addEventListener('resize', resize);
-        setTimeout(resize, 100);
+        mainChart.timeScale().subscribeVisibleTimeRangeChange((range) => rsiChart.timeScale().setVisibleRange(range));
+        window.addEventListener('resize', () => {
+            if(document.body.clientWidth > 0) {
+                mainChart.resize(document.body.clientWidth, (document.body.clientHeight - 110) * 0.8);
+                rsiChart.resize(document.body.clientWidth, (document.body.clientHeight - 110) * 0.2);
+            }
+        });
 
         // --- 2. 계산 함수 ---
         function calculateEMA(data, period) {
-            const result = [];
-            const k = 2 / (period + 1);
-            let ema = data[0].close;
+            if(data.length < period) return [];
+            const result = []; const k = 2 / (period + 1); let ema = data[0].close;
             for (let i = 0; i < data.length; i++) {
-                if(i < period - 1) {
-                    ema = data[i].close; result.push({ time: data[i].time, value: NaN }); 
-                } else {
-                    ema = data[i].close * k + ema * (1 - k);
-                    result.push({ time: data[i].time, value: ema });
-                }
+                if(i < period - 1) { ema = data[i].close; result.push({ time: data[i].time, value: NaN }); }
+                else { ema = data[i].close * k + ema * (1 - k); result.push({ time: data[i].time, value: ema }); }
             }
             return result;
         }
-
         function calculateRSI(data, period = 14) {
-            let result = [];
-            let gains = 0, losses = 0;
-            for(let i = 1; i <= period; i++) {
-                let change = data[i].close - data[i-1].close;
-                if(change > 0) gains += change; else losses -= change;
-            }
+            if(data.length < period) return [];
+            let result = []; let gains = 0, losses = 0;
+            for(let i = 1; i <= period; i++) { let chg = data[i].close - data[i-1].close; if(chg > 0) gains += chg; else losses -= chg; }
             let avgGain = gains / period; let avgLoss = losses / period;
             for(let i = 0; i < data.length; i++) {
                 if(i <= period) { result.push({ time: data[i].time, value: NaN }); continue; }
-                let change = data[i].close - data[i-1].close;
-                let gain = change > 0 ? change : 0; let loss = change < 0 ? -change : 0;
-                avgGain = (avgGain * (period - 1) + gain) / period;
-                avgLoss = (avgLoss * (period - 1) + loss) / period;
-                let rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-                result.push({ time: data[i].time, value: 100 - (100 / (1 + rs)) });
+                let chg = data[i].close - data[i-1].close; let gain = chg > 0 ? chg : 0; let loss = chg < 0 ? -chg : 0;
+                avgGain = (avgGain * (period - 1) + gain) / period; avgLoss = (avgLoss * (period - 1) + loss) / period;
+                let rs = avgLoss === 0 ? 100 : avgGain / avgLoss; result.push({ time: data[i].time, value: 100 - (100 / (1 + rs)) });
             }
             return result;
         }
 
-        // --- 3. 하이브리드 데이터 로드 (CoinGecko History + Binance Live) ---
-        // 코인게코 ID 매핑
-        const coinMap = {
-            'btc': 'bitcoin', 'eth': 'ethereum', 'xrp': 'ripple', 'sol': 'solana', 'doge': 'dogecoin', 'bnb': 'binancecoin'
-        };
-
-        let currentSymbolKey = 'btc';
-        let currentType = 'spot'; // spot only for history simplicity in this hybrid
+        // --- 3. 데이터 로드 (Fail-Safe 적용) ---
+        const coinMap = { 'btc': 'bitcoin', 'eth': 'ethereum', 'xrp': 'ripple', 'sol': 'solana', 'doge': 'dogecoin', 'bnb': 'binancecoin', 'pepe': 'pepe', 'wif': 'dogwifhat' };
         let ws = null;
 
         async function loadMarket(key, type) {
-            document.getElementById('loading').style.display = 'block';
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
+            loading.innerText = 'Initializing...';
+            
             if (ws) ws.close();
 
-            // 1. 과거 데이터: CoinGecko (CORS Free, Stable)
+            // [안전장치] 과거 데이터 가져오기 (타임아웃 적용)
+            // CoinGecko API 사용 (가장 안정적)
             const cgId = coinMap[key] || 'bitcoin';
             const url = `https://api.coingecko.com/api/v3/coins/${cgId}/ohlc?vs_currency=usd&days=1`;
+            let chartData = [];
 
             try {
-                const res = await fetch(url);
+                // 3초 안에 데이터 안 오면 그냥 넘김
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000); 
+
+                const res = await fetch(url, { signal: controller.signal });
                 const rawData = await res.json();
+                clearTimeout(timeoutId);
 
-                // CoinGecko: [time(ms), open, high, low, close]
-                const data = rawData.map(d => ({
-                    time: d[0] / 1000, // Unix Timestamp (Seconds)
-                    open: d[1], high: d[2], low: d[3], close: d[4]
-                }));
-
-                // 차트 그리기
-                candleSeries.setData(data);
-                ema20.setData(calculateEMA(data, 20));
-                ema60.setData(calculateEMA(data, 60));
-                ema120.setData(calculateEMA(data, 120));
-                ema200.setData(calculateEMA(data, 200));
-                rsiSeries.setData(calculateRSI(data));
-
-                document.getElementById('loading').style.display = 'none';
-
-                // 2. 실시간 데이터: Binance WebSocket (Fastest)
-                // Binance Symbol: btcusdt (lowercase)
-                const binanceSymbol = `${key}usdt`;
-                const wsBase = type === 'spot' ? 'wss://stream.binance.com:9443/ws' : 'wss://fstream.binance.com/ws';
-                ws = new WebSocket(`${wsBase}/${binanceSymbol}@kline_1m`);
-
-                ws.onmessage = (e) => {
-                    const msg = JSON.parse(e.data);
-                    const k = msg.k;
-                    
-                    const update = {
-                        time: k.t / 1000,
-                        open: parseFloat(k.o),
-                        high: parseFloat(k.h),
-                        low: parseFloat(k.l),
-                        close: parseFloat(k.c)
-                    };
-                    
-                    candleSeries.update(update);
-                    
-                    // 헤더 업데이트
-                    updateHeader(update.close, update.open, update.high, update.low);
-                };
-
-            } catch (error) {
-                console.error(error);
-                document.getElementById('loading').innerText = "Data Limit Reached (Wait 1min)";
+                if(Array.isArray(rawData)) {
+                    chartData = rawData.map(d => ({
+                        time: d[0] / 1000, open: d[1], high: d[2], low: d[3], close: d[4]
+                    }));
+                }
+            } catch (err) {
+                console.warn("History Load Failed or Timed Out (Starting Empty)");
             }
+
+            // 데이터가 없어도 차트 시리즈는 초기화해야 함
+            candleSeries.setData(chartData);
+            if(chartData.length > 0) {
+                ema20.setData(calculateEMA(chartData, 20));
+                ema60.setData(calculateEMA(chartData, 60));
+                ema120.setData(calculateEMA(chartData, 120));
+                ema200.setData(calculateEMA(chartData, 200));
+                rsiSeries.setData(calculateRSI(chartData));
+            }
+            
+            loading.style.display = 'none'; // 무조건 로딩 끝냄
+
+            // [핵심] 실시간 데이터 연결 (Binance WebSocket)
+            // 과거 데이터가 있든 없든 소켓은 연결함
+            const binanceSymbol = `${key}usdt`;
+            const wsBase = type === 'spot' ? 'wss://stream.binance.com:9443/ws' : 'wss://fstream.binance.com/ws';
+            
+            ws = new WebSocket(`${wsBase}/${binanceSymbol}@kline_1m`);
+            
+            ws.onopen = () => { console.log("WebSocket Connected"); };
+            ws.onmessage = (e) => {
+                const msg = JSON.parse(e.data);
+                const k = msg.k;
+                const update = {
+                    time: k.t / 1000,
+                    open: parseFloat(k.o),
+                    high: parseFloat(k.h),
+                    low: parseFloat(k.l),
+                    close: parseFloat(k.c)
+                };
+                
+                candleSeries.update(update);
+                
+                // 헤더 업데이트
+                updateHeader(update.close, update.open, update.high, update.low);
+            };
         }
 
-        // --- UI Logic ---
+        // --- 4. UI 및 유틸리티 ---
         const coins = [
-            { id: 'btc', n: 'BTC' }, { id: 'eth', n: 'ETH' },
-            { id: 'xrp', n: 'XRP' }, { id: 'sol', n: 'SOL' },
-            { id: 'bnb', n: 'BNB' }, { id: 'doge', n: 'DOGE' }
+            { id: 'btc', n: 'BTC' }, { id: 'eth', n: 'ETH' }, { id: 'xrp', n: 'XRP' },
+            { id: 'sol', n: 'SOL' }, { id: 'bnb', n: 'BNB' }, { id: 'doge', n: 'DOGE' }
         ];
 
         function createList(type, containerId) {
@@ -324,8 +274,6 @@
         }
 
         function selectCoin(id, name, type) {
-            currentSymbolKey = id;
-            currentType = type;
             document.getElementById('display-symbol').innerText = `${name}/USDT`;
             const badge = document.getElementById('market-badge');
             badge.innerText = type==='spot'?"SPOT":"PERP";
@@ -334,20 +282,20 @@
             loadMarket(id, type);
         }
 
-        function updateHeader(price, open, high, low) {
-            const p = parseFloat(price);
-            const o = parseFloat(open);
-            const change = ((p - o) / o) * 100;
+        function updateHeader(p, o, h, l) {
+            const price = parseFloat(p); const open = parseFloat(o);
+            const change = ((price - open) / open) * 100;
             const color = change >= 0 ? 'c-up' : 'c-down';
             
-            document.getElementById('display-price').innerText = p.toLocaleString(undefined, {minimumFractionDigits:2});
+            document.getElementById('display-price').innerText = price.toLocaleString(undefined, {minimumFractionDigits:2});
             document.getElementById('display-price').className = `main-price ${color}`;
             document.getElementById('display-change').innerText = (change>0?"+":"") + change.toFixed(2) + "%";
             document.getElementById('display-change').className = `stat-val ${color}`;
-            document.getElementById('display-high').innerText = parseFloat(high).toLocaleString();
-            document.getElementById('display-low').innerText = parseFloat(low).toLocaleString();
+            document.getElementById('display-high').innerText = parseFloat(h).toLocaleString();
+            document.getElementById('display-low').innerText = parseFloat(l).toLocaleString();
         }
 
+        // 드롭다운 이벤트
         const btn = document.getElementById('symbol-btn');
         const dropdown = document.getElementById('dropdown');
         btn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); });
@@ -356,8 +304,11 @@
         });
         dropdown.addEventListener('click', (e) => e.stopPropagation());
 
-        // 실행
-        loadMarket('btc', 'spot');
+        // 초기 실행: 무조건 실행되도록 타임아웃 줌
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+            loadMarket('btc', 'spot');
+        }, 100);
 
     </script>
 </body>
