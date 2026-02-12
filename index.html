@@ -63,7 +63,7 @@
   }
 
   /* ══════════════════════════════
-     HEADER
+      HEADER
   ══════════════════════════════ */
   header {
     height: 44px;
@@ -110,7 +110,7 @@
   .ws-badge.connected { color: var(--text-pri); }
 
   /* ══════════════════════════════
-     TICKER BAR
+      TICKER BAR
   ══════════════════════════════ */
   .ticker-bar {
     height: 64px;
@@ -359,7 +359,7 @@
   }
 
   /* ══════════════════════════════
-     CHART
+      CHART
   ══════════════════════════════ */
   .chart-container {
     flex: 1;
@@ -375,7 +375,6 @@
 <body>
 <div class="shell">
 
-  <!-- HEADER -->
   <header>
     <div class="ws-badge" id="ws-badge">
       <div class="ws-dot" id="ws-dot"></div>
@@ -383,10 +382,8 @@
     </div>
   </header>
 
-  <!-- TICKER BAR -->
   <div class="ticker-bar">
 
-    <!-- Symbol selector -->
     <div class="symbol-selector" id="symbol-btn">
       <div class="current-symbol">
         <div class="sym-icon" id="sym-icon"><img src="https://assets.coingecko.com/coins/images/1/small/bitcoin.png" alt="BTC"></div>
@@ -399,11 +396,9 @@
 
       <div class="dropdown-menu" id="dropdown">
         <div class="dropdown-header">Select Market</div>
-        <!-- items injected by JS -->
-      </div>
+        </div>
     </div>
 
-    <!-- Interval buttons -->
     <div class="interval-group" id="interval-group">
       <button class="interval-btn" data-iv="1"   onclick="changeInterval('1', this)">1m</button>
       <button class="interval-btn" data-iv="3"   onclick="changeInterval('3', this)">3m</button>
@@ -416,7 +411,6 @@
       <button class="interval-btn" data-iv="M"   onclick="changeInterval('M', this)">1M</button>
     </div>
 
-    <!-- Price + stats -->
     <div class="price-block">
       <div class="main-price-wrap">
         <div class="price-tag">Last Price</div>
@@ -447,7 +441,6 @@
 
   </div>
 
-  <!-- CHART -->
   <div class="chart-container">
     <div id="tv_chart_container"></div>
   </div>
@@ -544,7 +537,7 @@
     loadChart(currentCoin.tv, interval);
   }
 
-  /* ─── Load TradingView chart ─── */
+  /* ─── Load TradingView chart (업데이트됨) ─── */
   function loadChart(symbol, interval) {
     document.getElementById('tv_chart_container').innerHTML = '';
     tvWidget = new TradingView.widget({
@@ -585,15 +578,20 @@
         'paneProperties.crossHairProperties.color':              '#c8a84b',
         'paneProperties.crossHairProperties.style':              1,
         'paneProperties.crossHairProperties.width':              1,
-        /* Scales */
+        
+        /* ─── Scales (라벨 설정 전체 활성화) ─── */
         'scalesProperties.textColor':                            '#4e5a72',
         'scalesProperties.lineColor':                            '#1a2035',
         'scalesProperties.fontSize':                             11,
         'scalesProperties.backgroundColor':                      '#060810',
-        'scalesProperties.showSeriesLastValue':                  true,
-        'scalesProperties.showStudyLastValue':                   true,
-        'scalesProperties.showStudyPlotLabels':                  true,
-        'scalesProperties.showSymbolLabels':                     true,
+        
+        'scalesProperties.showSeriesLastValue':                  true, // 현재가 라벨
+        'scalesProperties.showStudyLastValue':                   true, // 지표 값 라벨
+        'scalesProperties.showStudyPlotLabels':                  true, // 지표 이름 라벨
+        'scalesProperties.showSymbolLabels':                     true, // 심볼 이름 라벨
+        'scalesProperties.showBidAskLabels':                     true, // 매수/매도 라벨 (추가됨)
+        'scalesProperties.showHighLowPriceLabels':               true, // 고가/저가 라벨 (추가됨)
+
         /* Candles */
         'mainSeriesProperties.candleStyle.upColor':              '#00e87a',
         'mainSeriesProperties.candleStyle.downColor':            '#ff3a5c',
@@ -602,15 +600,23 @@
         'mainSeriesProperties.candleStyle.wickUpColor':          '#00e87a80',
         'mainSeriesProperties.candleStyle.wickDownColor':        '#ff3a5c80',
         'mainSeriesProperties.candleStyle.barColorsOnPrevClose': false,
-        /* Price / prev close line */
-        'mainSeriesProperties.showPriceLine':                    true,
+        
+        /* ─── Lines (라인 설정 전체 활성화) ─── */
+        'mainSeriesProperties.showPriceLine':                    true,     // 현재가 라인
         'mainSeriesProperties.priceLineColor':                   '#c8a84b',
         'mainSeriesProperties.priceLineWidth':                   1,
-        'mainSeriesProperties.showPrevClosePriceLine':           true,
+        
+        'mainSeriesProperties.showPrevClosePriceLine':           true,     // 전일 종가 라인
         'mainSeriesProperties.prevClosePriceLineColor':          '#4e5a72',
         'mainSeriesProperties.prevClosePriceLineWidth':          1,
+        
+        'mainSeriesProperties.highLowPriceLines.visible':        true,     // 최고가/최저가 라인 (추가됨)
+        'mainSeriesProperties.highLowPriceLines.color':          '#4e5a72',
+        'mainSeriesProperties.highLowPriceLines.width':          1,
+
         /* Countdown */
         'mainSeriesProperties.showCountdown':                    true,
+        
         /* Volume */
         'volume.volume.color.0':                                 '#ff3a5c55',
         'volume.volume.color.1':                                 '#00e87a55',
