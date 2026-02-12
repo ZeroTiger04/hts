@@ -3,313 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZeroTiger Live</title>
-    
-    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
+    <title>My Private Drive</title>
     <style>
-        /* CSS 리셋 */
-        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #0b0e11; }
-        * { box-sizing: border-box; }
-
-        :root {
-            --bg-body: #0b0e11; --bg-card: #1e2329; --bg-hover: #2b3139;
-            --border: #252930; --text-primary: #eaecef; --text-secondary: #848e9c;
-            --text-yellow: #fcd535; --up: #0ecb81; --down: #f6465d;
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; padding: 20px; }
+        h1 { text-align: center; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .file-list { list-style: none; padding: 0; }
+        .file-item { 
+            background: white; 
+            margin-bottom: 10px; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            transition: transform 0.2s;
         }
-
-        body { color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; display: flex; flex-direction: column; }
-
-        /* 헤더 & 티커바 */
-        header { height: 50px; background: #181a20; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; flex-shrink: 0; }
-        .logo { font-size: 1.3rem; font-weight: bold; color: var(--text-yellow); display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 1px; }
-
-        .ticker-bar { height: 60px; background: #161a1e; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 20px; position: relative; flex-shrink: 0; z-index: 50; }
-
-        /* 종목 선택 */
-        .symbol-selector { position: relative; cursor: pointer; }
-        .current-symbol-box { display: flex; align-items: center; gap: 10px; font-size: 1.4rem; font-weight: bold; }
-        .current-symbol-box:hover { color: var(--text-yellow); }
-        .market-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #333; color: #aaa; }
-        .badge-spot { background: #fcd535; color: #000; } 
-        .badge-future { background: #ff5500; color: #fff; }
-
-        /* 드롭다운 */
-        .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; margin-top: 10px; width: 350px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 10px 20px rgba(0,0,0,0.8); z-index: 1000; }
-        .dropdown-menu.show { display: block; }
-        .tab-header { display: flex; border-bottom: 1px solid var(--border); }
-        .tab-btn { flex: 1; padding: 12px; cursor: pointer; font-weight: bold; color: var(--text-secondary); background: transparent; border: none; }
-        .tab-btn.active { color: var(--text-yellow); border-bottom: 2px solid var(--text-yellow); background: var(--bg-hover); }
-        .coin-list-container { max-height: 400px; overflow-y: auto; display: none; }
-        .coin-list-container.active { display: block; }
-        .menu-item { display: flex; justify-content: space-between; padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #252930; }
-        .menu-item:hover { background: var(--bg-hover); }
-
-        /* 가격 정보 */
-        .main-price { font-size: 1.4rem; font-weight: bold; font-family: 'Roboto', sans-serif; }
-        .stat-group { display: flex; gap: 20px; }
-        .stat-box { display: flex; flex-direction: column; font-size: 0.75rem; color: var(--text-secondary); }
-        .stat-val { font-size: 0.8rem; color: var(--text-primary); margin-top: 3px; }
-        .c-up { color: var(--up); } .c-down { color: var(--down); }
-
-        /* 차트 영역 */
-        .chart-layout { flex: 1; display: flex; flex-direction: column; position: relative; z-index: 1; }
-        #chart-area { flex: 4; width: 100%; position: relative; }
-        #rsi-area { flex: 1; width: 100%; border-top: 1px solid var(--border); position: relative; }
-        
-        /* 로딩 메시지 */
-        .loading-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666; font-size: 1rem; z-index: 10; pointer-events: none; }
-        .legend { position: absolute; top: 10px; left: 10px; z-index: 5; font-size: 11px; font-family: 'Roboto'; pointer-events: none; }
-        .legend-item { margin-right: 8px; font-weight: bold; }
-
+        .file-item:hover { transform: translateY(-3px); }
+        .file-name { font-weight: bold; color: #555; text-decoration: none; }
+        .btn { 
+            background-color: #4285F4; 
+            color: white; 
+            text-decoration: none; 
+            padding: 8px 15px; 
+            border-radius: 4px; 
+            font-size: 14px; 
+        }
+        .loading { text-align: center; margin-top: 50px; color: #888; }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo"><i class="fas fa-paw"></i> ZeroTiger</div>
-        <div style="font-size:0.8rem; color:#666;">Fail-Safe Engine</div>
-    </header>
-
-    <div class="ticker-bar">
-        <div class="symbol-selector" id="symbol-btn">
-            <div class="current-symbol-box">
-                <span id="display-symbol">BTC/USDT</span>
-                <span id="market-badge" class="market-badge badge-spot">SPOT</span>
-                <i class="fas fa-caret-down" style="font-size:0.8rem; color:#888;"></i>
-            </div>
-            <div class="dropdown-menu" id="dropdown">
-                <div class="tab-header">
-                    <button class="tab-btn active" onclick="switchTab(event, 'spot')">현물 (Spot)</button>
-                    <button class="tab-btn" onclick="switchTab(event, 'future')">선물 (Futures)</button>
-                </div>
-                <div id="list-spot" class="coin-list-container active"></div>
-                <div id="list-future" class="coin-list-container"></div>
-            </div>
-        </div>
-        <div style="display:flex; align-items:center; gap:20px;">
-            <div class="main-price" id="display-price">---</div>
-            <div class="stat-group">
-                <div class="stat-box"><span>Change</span><span class="stat-val" id="display-change">0.00%</span></div>
-                <div class="stat-box"><span>High</span><span class="stat-val" id="display-high">0.00</span></div>
-                <div class="stat-box"><span>Low</span><span class="stat-val" id="display-low">0.00</span></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="chart-layout">
-        <div id="loading" class="loading-msg">Connecting...</div>
-        <div id="chart-area">
-            <div class="legend">
-                <span class="legend-item" style="color:#ffa500">EMA(20)</span>
-                <span class="legend-item" style="color:#00ff00">EMA(60)</span>
-                <span class="legend-item" style="color:#ff0000">EMA(120)</span>
-                <span class="legend-item" style="color:#0088ff">EMA(200)</span>
-            </div>
-        </div>
-        <div id="rsi-area">
-            <div class="legend" style="top:5px;">
-                <span class="legend-item" style="color:#9e55ff">RSI(14)</span>
-            </div>
-        </div>
+    <div class="container">
+        <h1>📂 나의 클라우드 저장소</h1>
+        <div id="loading" class="loading">파일을 불러오는 중입니다...</div>
+        <ul id="fileList" class="file-list"></ul>
     </div>
 
     <script>
-        // --- 1. 차트 엔진 생성 ---
-        const chartProps = {
-            layout: { background: { color: '#0b0e11' }, textColor: '#848e9c' },
-            grid: { vertLines: { color: '#1e2329' }, horzLines: { color: '#1e2329' } },
-            timeScale: { timeVisible: true, borderColor: '#252930' },
-            crosshair: { mode: 1 },
-        };
-        const mainChart = LightweightCharts.createChart(document.getElementById('chart-area'), {
-            ...chartProps, rightPriceScale: { borderColor: '#252930', scaleMargins: { top: 0.1, bottom: 0.1 } }
-        });
-        const rsiChart = LightweightCharts.createChart(document.getElementById('rsi-area'), {
-            ...chartProps, rightPriceScale: { borderColor: '#252930' }, timeScale: { visible: false }
-        });
+        // 여기에 아까 복사한 구글 앱스 스크립트의 '웹 앱 URL'을 넣으세요!
+        const API_URL = "여기에_웹_앱_URL을_붙여넣으세요";
 
-        const candleSeries = mainChart.addCandlestickSeries({ upColor: '#0ecb81', downColor: '#f6465d', borderUpColor: '#0ecb81', borderDownColor: '#f6465d', wickUpColor: '#0ecb81', wickDownColor: '#f6465d' });
-        const ema20 = mainChart.addLineSeries({ color: '#ffa500', lineWidth: 1, priceScaleId: 'right' });
-        const ema60 = mainChart.addLineSeries({ color: '#00ff00', lineWidth: 1, priceScaleId: 'right' });
-        const ema120 = mainChart.addLineSeries({ color: '#ff0000', lineWidth: 1, priceScaleId: 'right' });
-        const ema200 = mainChart.addLineSeries({ color: '#0088ff', lineWidth: 1, priceScaleId: 'right' });
-        const rsiSeries = rsiChart.addLineSeries({ color: '#9e55ff', lineWidth: 1 });
-        rsiChart.createPriceLine({ price: 70, color: '#888', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
-        rsiChart.createPriceLine({ price: 30, color: '#888', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
-
-        mainChart.timeScale().subscribeVisibleTimeRangeChange((range) => rsiChart.timeScale().setVisibleRange(range));
-        window.addEventListener('resize', () => {
-            if(document.body.clientWidth > 0) {
-                mainChart.resize(document.body.clientWidth, (document.body.clientHeight - 110) * 0.8);
-                rsiChart.resize(document.body.clientWidth, (document.body.clientHeight - 110) * 0.2);
-            }
-        });
-
-        // --- 2. 계산 함수 ---
-        function calculateEMA(data, period) {
-            if(data.length < period) return [];
-            const result = []; const k = 2 / (period + 1); let ema = data[0].close;
-            for (let i = 0; i < data.length; i++) {
-                if(i < period - 1) { ema = data[i].close; result.push({ time: data[i].time, value: NaN }); }
-                else { ema = data[i].close * k + ema * (1 - k); result.push({ time: data[i].time, value: ema }); }
-            }
-            return result;
-        }
-        function calculateRSI(data, period = 14) {
-            if(data.length < period) return [];
-            let result = []; let gains = 0, losses = 0;
-            for(let i = 1; i <= period; i++) { let chg = data[i].close - data[i-1].close; if(chg > 0) gains += chg; else losses -= chg; }
-            let avgGain = gains / period; let avgLoss = losses / period;
-            for(let i = 0; i < data.length; i++) {
-                if(i <= period) { result.push({ time: data[i].time, value: NaN }); continue; }
-                let chg = data[i].close - data[i-1].close; let gain = chg > 0 ? chg : 0; let loss = chg < 0 ? -chg : 0;
-                avgGain = (avgGain * (period - 1) + gain) / period; avgLoss = (avgLoss * (period - 1) + loss) / period;
-                let rs = avgLoss === 0 ? 100 : avgGain / avgLoss; result.push({ time: data[i].time, value: 100 - (100 / (1 + rs)) });
-            }
-            return result;
-        }
-
-        // --- 3. 데이터 로드 (Fail-Safe 적용) ---
-        const coinMap = { 'btc': 'bitcoin', 'eth': 'ethereum', 'xrp': 'ripple', 'sol': 'solana', 'doge': 'dogecoin', 'bnb': 'binancecoin', 'pepe': 'pepe', 'wif': 'dogwifhat' };
-        let ws = null;
-
-        async function loadMarket(key, type) {
-            const loading = document.getElementById('loading');
-            loading.style.display = 'block';
-            loading.innerText = 'Initializing...';
-            
-            if (ws) ws.close();
-
-            // [안전장치] 과거 데이터 가져오기 (타임아웃 적용)
-            // CoinGecko API 사용 (가장 안정적)
-            const cgId = coinMap[key] || 'bitcoin';
-            const url = `https://api.coingecko.com/api/v3/coins/${cgId}/ohlc?vs_currency=usd&days=1`;
-            let chartData = [];
-
+        async function loadFiles() {
             try {
-                // 3초 안에 데이터 안 오면 그냥 넘김
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000); 
-
-                const res = await fetch(url, { signal: controller.signal });
-                const rawData = await res.json();
-                clearTimeout(timeoutId);
-
-                if(Array.isArray(rawData)) {
-                    chartData = rawData.map(d => ({
-                        time: d[0] / 1000, open: d[1], high: d[2], low: d[3], close: d[4]
-                    }));
-                }
-            } catch (err) {
-                console.warn("History Load Failed or Timed Out (Starting Empty)");
-            }
-
-            // 데이터가 없어도 차트 시리즈는 초기화해야 함
-            candleSeries.setData(chartData);
-            if(chartData.length > 0) {
-                ema20.setData(calculateEMA(chartData, 20));
-                ema60.setData(calculateEMA(chartData, 60));
-                ema120.setData(calculateEMA(chartData, 120));
-                ema200.setData(calculateEMA(chartData, 200));
-                rsiSeries.setData(calculateRSI(chartData));
-            }
-            
-            loading.style.display = 'none'; // 무조건 로딩 끝냄
-
-            // [핵심] 실시간 데이터 연결 (Binance WebSocket)
-            // 과거 데이터가 있든 없든 소켓은 연결함
-            const binanceSymbol = `${key}usdt`;
-            const wsBase = type === 'spot' ? 'wss://stream.binance.com:9443/ws' : 'wss://fstream.binance.com/ws';
-            
-            ws = new WebSocket(`${wsBase}/${binanceSymbol}@kline_1m`);
-            
-            ws.onopen = () => { console.log("WebSocket Connected"); };
-            ws.onmessage = (e) => {
-                const msg = JSON.parse(e.data);
-                const k = msg.k;
-                const update = {
-                    time: k.t / 1000,
-                    open: parseFloat(k.o),
-                    high: parseFloat(k.h),
-                    low: parseFloat(k.l),
-                    close: parseFloat(k.c)
-                };
+                const response = await fetch(API_URL);
+                const files = await response.json();
                 
-                candleSeries.update(update);
+                const listContainer = document.getElementById('fileList');
+                const loading = document.getElementById('loading');
                 
-                // 헤더 업데이트
-                updateHeader(update.close, update.open, update.high, update.low);
-            };
+                loading.style.display = 'none'; // 로딩 문구 숨김
+
+                files.forEach(file => {
+                    const li = document.createElement('li');
+                    li.className = 'file-item';
+                    
+                    li.innerHTML = `
+                        <span class="file-name">📄 ${file.name}</span>
+                        <a href="${file.url}" target="_blank" class="btn">다운로드 / 보기</a>
+                    `;
+                    listContainer.appendChild(li);
+                });
+            } catch (error) {
+                console.error("에러 발생:", error);
+                document.getElementById('loading').innerText = "파일을 불러오는데 실패했습니다.";
+            }
         }
 
-        // --- 4. UI 및 유틸리티 ---
-        const coins = [
-            { id: 'btc', n: 'BTC' }, { id: 'eth', n: 'ETH' }, { id: 'xrp', n: 'XRP' },
-            { id: 'sol', n: 'SOL' }, { id: 'bnb', n: 'BNB' }, { id: 'doge', n: 'DOGE' }
-        ];
-
-        function createList(type, containerId) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = "";
-            coins.forEach(c => {
-                const item = document.createElement('div');
-                item.className = 'menu-item';
-                item.onclick = (e) => { e.stopPropagation(); selectCoin(c.id, c.n, type); };
-                item.innerHTML = `<div><span style="font-weight:bold;">${c.n}/USDT</span> <span style="font-size:0.75rem; color:#666;">${type.toUpperCase()}</span></div>`;
-                container.appendChild(item);
-            });
-        }
-        createList('spot', 'list-spot');
-        createList('future', 'list-future');
-
-        window.switchTab = function(e, type) {
-            e.stopPropagation();
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            document.getElementById('list-spot').classList.remove('active');
-            document.getElementById('list-future').classList.remove('active');
-            document.getElementById(`list-${type}`).classList.add('active');
-        }
-
-        function selectCoin(id, name, type) {
-            document.getElementById('display-symbol').innerText = `${name}/USDT`;
-            const badge = document.getElementById('market-badge');
-            badge.innerText = type==='spot'?"SPOT":"PERP";
-            badge.className = type==='spot'?"market-badge badge-spot":"market-badge badge-future";
-            document.getElementById('dropdown').classList.remove('show');
-            loadMarket(id, type);
-        }
-
-        function updateHeader(p, o, h, l) {
-            const price = parseFloat(p); const open = parseFloat(o);
-            const change = ((price - open) / open) * 100;
-            const color = change >= 0 ? 'c-up' : 'c-down';
-            
-            document.getElementById('display-price').innerText = price.toLocaleString(undefined, {minimumFractionDigits:2});
-            document.getElementById('display-price').className = `main-price ${color}`;
-            document.getElementById('display-change').innerText = (change>0?"+":"") + change.toFixed(2) + "%";
-            document.getElementById('display-change').className = `stat-val ${color}`;
-            document.getElementById('display-high').innerText = parseFloat(h).toLocaleString();
-            document.getElementById('display-low').innerText = parseFloat(l).toLocaleString();
-        }
-
-        // 드롭다운 이벤트
-        const btn = document.getElementById('symbol-btn');
-        const dropdown = document.getElementById('dropdown');
-        btn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); });
-        document.addEventListener('click', (e) => {
-            if (!btn.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('show');
-        });
-        dropdown.addEventListener('click', (e) => e.stopPropagation());
-
-        // 초기 실행: 무조건 실행되도록 타임아웃 줌
-        setTimeout(() => {
-            window.dispatchEvent(new Event('resize'));
-            loadMarket('btc', 'spot');
-        }, 100);
-
+        // 페이지 로드 시 실행
+        loadFiles();
     </script>
 </body>
 </html>
