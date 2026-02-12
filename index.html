@@ -556,45 +556,9 @@
       style:             '1',
       locale:            'kr',
       toolbar_bg:        '#0d1017',
-      studies: [
-        {
-          id: 'MAExp@tv-basicstudies',
-          inputs: { length: 20 },
-          overrides: { 'MA.color': '#ff8c00', 'MA.linewidth': 1, 'MA.visible': true }
-        },
-        {
-          id: 'MAExp@tv-basicstudies',
-          inputs: { length: 60 },
-          overrides: { 'MA.color': '#00e87a', 'MA.linewidth': 1, 'MA.visible': true }
-        },
-        {
-          id: 'MAExp@tv-basicstudies',
-          inputs: { length: 120 },
-          overrides: { 'MA.color': '#ff3a5c', 'MA.linewidth': 1, 'MA.visible': true }
-        },
-        {
-          id: 'MAExp@tv-basicstudies',
-          inputs: { length: 200 },
-          overrides: { 'MA.color': '#4d9fff', 'MA.linewidth': 2, 'MA.visible': true }
-        },
-        {
-          id: 'RSI@tv-basicstudies',
-          overrides: {
-            'RSI.color':                  '#c8a84b',
-            'RSI.linewidth':              1,
-            'Overbought.color':           '#1a2035',
-            'Oversold.color':             '#1a2035',
-            'Hlines Background.color':    '#c8a84b08',
-          }
-        },
-      ],
       studies_overrides: {
-        /* ── Volume ── */
         'volume.volume.color.0': '#ff3a5c55',
         'volume.volume.color.1': '#00e87a55',
-        /* ── EMA (studies_overrides 방식 병행) ── */
-        'moving average exponential.MA.color':      '#ff8c00',
-        'moving average exponential.MA.linewidth':  1,
       },
       enable_publishing: false,
       hide_top_toolbar:  true,
@@ -662,6 +626,46 @@
         'mainSeriesProperties.prevClosePriceLineWidth':        1,
         'mainSeriesProperties.prevClosePriceLineColor':        '#4e5a72',
       }
+    });
+
+    tvWidget.onChartReady(() => {
+      const chart = tvWidget.activeChart();
+
+      /* ── EMA 20 주황 ── */
+      chart.createStudy('Moving Average Exponential', false, false,
+        { length: 20 },
+        { 'Plot.color': '#ff8c00', 'Plot.linewidth': 1 }
+      );
+
+      /* ── EMA 60 초록 ── */
+      chart.createStudy('Moving Average Exponential', false, false,
+        { length: 60 },
+        { 'Plot.color': '#00e87a', 'Plot.linewidth': 1 }
+      );
+
+      /* ── EMA 120 빨강 ── */
+      chart.createStudy('Moving Average Exponential', false, false,
+        { length: 120 },
+        { 'Plot.color': '#ff3a5c', 'Plot.linewidth': 1 }
+      );
+
+      /* ── EMA 200 파랑 ── */
+      chart.createStudy('Moving Average Exponential', false, false,
+        { length: 200 },
+        { 'Plot.color': '#4d9fff', 'Plot.linewidth': 2 }
+      );
+
+      /* ── RSI 골드 ── */
+      chart.createStudy('Relative Strength Index', false, false,
+        { length: 14 },
+        {
+          'Plot.color':                '#c8a84b',
+          'Plot.linewidth':            1,
+          'Overbought.color':          '#1a2035',
+          'Oversold.color':            '#1a2035',
+          'Hlines Background.color':   '#c8a84b08',
+        }
+      );
     });
   }
 
