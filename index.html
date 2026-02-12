@@ -11,8 +11,8 @@
     <style>
         :root {
             --bg-body: #0b0e11;
-            --bg-card: #161a1e;       /* 패널 배경 */
-            --bg-hover: #2b3139;      /* 호버 색상 */
+            --bg-card: #161a1e;
+            --bg-hover: #2b3139;
             --border: #252930;
             --text-primary: #eaecef;
             --text-secondary: #848e9c;
@@ -34,7 +34,6 @@
             overflow: hidden;
         }
 
-        /* 1. 최상단 글로벌 헤더 (로고 제거됨) */
         header {
             height: 40px;
             background-color: #181a20;
@@ -42,11 +41,10 @@
             display: flex;
             align-items: center;
             padding: 0 20px;
-            justify-content: flex-end; /* 오른쪽 정렬 */
+            justify-content: flex-end;
             z-index: 100;
         }
 
-        /* 2. 정보 표시줄 (Ticker Bar) */
         .ticker-bar {
             height: 60px;
             background-color: var(--bg-card);
@@ -54,16 +52,12 @@
             display: flex;
             align-items: center;
             padding: 0 20px;
-            gap: 20px;
+            gap: 30px;
             position: relative;
         }
 
-        /* 3. 종목 선택 드롭다운 */
-        .symbol-selector {
-            position: relative;
-            cursor: pointer;
-        }
-
+        /* 종목 선택기 */
+        .symbol-selector { position: relative; cursor: pointer; min-width: 140px; }
         .current-symbol {
             font-size: 1.4rem;
             font-weight: bold;
@@ -72,9 +66,27 @@
             align-items: center;
             gap: 10px;
         }
-
         .current-symbol:hover { color: var(--text-yellow); }
-        .current-symbol i { font-size: 0.8rem; color: var(--text-secondary); }
+
+        /* 시간 단위(Interval) 스타일 */
+        .interval-group {
+            display: flex;
+            gap: 5px;
+            border-left: 1px solid var(--border);
+            padding-left: 20px;
+        }
+        .interval-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: 0.2s;
+        }
+        .interval-btn:hover { background-color: var(--bg-hover); color: var(--text-primary); }
+        .interval-btn.active { color: var(--text-yellow); font-weight: bold; }
 
         .dropdown-menu {
             display: none;
@@ -91,7 +103,6 @@
             max-height: 400px;
             overflow-y: auto;
         }
-
         .dropdown-menu.show { display: block; }
 
         .menu-item {
@@ -103,41 +114,18 @@
         }
         .menu-item:hover { background-color: var(--bg-hover); }
 
-        .item-left { display: flex; flex-direction: column; }
-        .item-symbol { font-weight: bold; font-size: 0.95rem; }
-        .item-name { font-size: 0.75rem; color: var(--text-secondary); }
-        
-        .item-right { text-align: right; }
-        .item-price { font-family: 'Roboto', sans-serif; font-weight: 500; }
-        
-        .main-price-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
+        .main-price-info { display: flex; align-items: center; gap: 20px; }
         .main-price { font-size: 1.4rem; font-weight: bold; color: var(--up); font-family: 'Roboto', sans-serif;}
         
-        .stat-group {
-            display: flex;
-            gap: 20px;
-        }
+        .stat-group { display: flex; gap: 20px; }
         .stat-box { display: flex; flex-direction: column; font-size: 0.75rem; color: var(--text-secondary); }
         .stat-val { font-size: 0.8rem; color: var(--text-primary); margin-top: 3px; }
 
         .c-up { color: var(--up); }
         .c-down { color: var(--down); }
 
-        /* 4. 차트 영역 */
-        .chart-container {
-            flex: 1;
-            background-color: var(--bg-body);
-            position: relative;
-        }
-        
-        #tv_chart_container {
-            width: 100%;
-            height: 100%;
-        }
+        .chart-container { flex: 1; background-color: var(--bg-body); position: relative; }
+        #tv_chart_container { width: 100%; height: 100%; }
 
     </style>
 </head>
@@ -159,21 +147,24 @@
             <div class="dropdown-menu" id="dropdown"></div>
         </div>
 
+        <div class="interval-group" id="interval-group">
+            <button class="interval-btn" onclick="changeInterval('1')">1</button>
+            <button class="interval-btn" onclick="changeInterval('3')">3</button>
+            <button class="interval-btn" onclick="changeInterval('5')">5</button>
+            <button class="interval-btn" onclick="changeInterval('15')">15</button>
+            <button class="interval-btn" onclick="changeInterval('60')">1시간</button>
+            <button class="interval-btn" onclick="changeInterval('240')">4시간</button>
+            <button class="interval-btn active" onclick="changeInterval('D')">하루</button>
+            <button class="interval-btn" onclick="changeInterval('W')">주</button>
+            <button class="interval-btn" onclick="changeInterval('M')">달</button>
+        </div>
+
         <div class="main-price-info">
             <div class="main-price" id="display-price">0.00</div>
             <div class="stat-group">
-                <div class="stat-box">
-                    <span>24h Change</span>
-                    <span class="stat-val" id="display-change">0.00%</span>
-                </div>
-                <div class="stat-box">
-                    <span>24h High</span>
-                    <span class="stat-val" id="display-high">0.00</span>
-                </div>
-                <div class="stat-box">
-                    <span>24h Low</span>
-                    <span class="stat-val" id="display-low">0.00</span>
-                </div>
+                <div class="stat-box"><span>24h Change</span><span class="stat-val" id="display-change">0.00%</span></div>
+                <div class="stat-box"><span>24h High</span><span class="stat-val" id="display-high">0.00</span></div>
+                <div class="stat-box"><span>24h Low</span><span class="stat-val" id="display-low">0.00</span></div>
             </div>
         </div>
     </div>
@@ -195,59 +186,51 @@
         ];
 
         let currentCoin = coins[0];
+        let currentInterval = 'D'; // 기본값: 하루(Daily)
         let tvWidget = null;
 
+        // 드롭다운 생성
         const dropdownEl = document.getElementById('dropdown');
-        
         coins.forEach(c => {
             const item = document.createElement('div');
             item.className = 'menu-item';
-            item.onclick = (e) => {
-                e.stopPropagation();
-                selectCoin(c);
-            };
-
-            item.innerHTML = `
-                <div class="item-left">
-                    <span class="item-symbol">${c.n}/USDT</span>
-                    <span class="item-name">${c.name}</span>
-                </div>
-                <div class="item-right">
-                    <div class="item-price" id="menu-price-${c.s}">-</div>
-                    <div style="font-size:0.75rem; color:#848e9c;" id="menu-change-${c.s}">0.00%</div>
-                </div>
-            `;
+            item.onclick = (e) => { e.stopPropagation(); selectCoin(c); };
+            item.innerHTML = `<div class="item-left"><span class="item-symbol">${c.n}/USDT</span><span class="item-name">${c.name}</span></div><div class="item-right"><div class="item-price" id="menu-price-${c.s}">-</div><div style="font-size:0.75rem; color:#848e9c;" id="menu-change-${c.s}">0.00%</div></div>`;
             dropdownEl.appendChild(item);
         });
 
+        // 메뉴 토글
         const btn = document.getElementById('symbol-btn');
-        btn.addEventListener('click', () => {
-            dropdownEl.classList.toggle('show');
-        });
+        btn.addEventListener('click', () => dropdownEl.classList.toggle('show'));
+        document.addEventListener('click', (e) => { if (!btn.contains(e.target)) dropdownEl.classList.remove('show'); });
 
-        document.addEventListener('click', (e) => {
-            if (!btn.contains(e.target)) {
-                dropdownEl.classList.remove('show');
-            }
-        });
-
+        // 코인 선택
         function selectCoin(coin) {
             currentCoin = coin;
             document.getElementById('display-symbol').innerText = `${coin.n}/USDT`;
-            loadChart(coin.tv);
+            loadChart(coin.tv, currentInterval);
             dropdownEl.classList.remove('show');
-            document.getElementById('display-price').style.color = '#eaecef';
         }
 
-        function loadChart(symbol) {
-            if(document.getElementById('tv_chart_container').innerHTML !== "") {
-                document.getElementById('tv_chart_container').innerHTML = "";
-            }
+        // 시간 단위 변경 함수
+        function changeInterval(interval) {
+            currentInterval = interval;
+            
+            // 버튼 활성화 스타일 제어
+            const btns = document.querySelectorAll('.interval-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
 
-            tvWidget = new TradingView.widget({
+            loadChart(currentCoin.tv, interval);
+        }
+
+        // 차트 로드
+        function loadChart(symbol, interval) {
+            document.getElementById('tv_chart_container').innerHTML = "";
+            new TradingView.widget({
                 "autosize": true,
                 "symbol": symbol,
-                "interval": "D",
+                "interval": interval,
                 "timezone": "Asia/Seoul",
                 "theme": "dark",
                 "style": "1",
@@ -264,6 +247,7 @@
             });
         }
 
+        // 웹소켓 연결
         const streams = coins.map(c => `${c.s}@ticker`).join('/');
         const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
 
@@ -272,13 +256,11 @@
             const s = data.s.toLowerCase();
             const p = parseFloat(data.c);   
             const P = parseFloat(data.P);   
-            const h = parseFloat(data.h);   
-            const l = parseFloat(data.l);   
-
+            const color = P >= 0 ? 'c-up' : 'c-down';
             const fmtPrice = p < 1 ? p.toFixed(5) : p.toLocaleString(undefined, {minimumFractionDigits:2});
             const fmtPct = (P > 0 ? "+" : "") + P.toFixed(2) + "%";
-            const color = P >= 0 ? 'c-up' : 'c-down';
 
+            // 메뉴 업데이트
             const menuPrice = document.getElementById(`menu-price-${s}`);
             const menuChange = document.getElementById(`menu-change-${s}`);
             if(menuPrice) {
@@ -288,21 +270,20 @@
                 menuChange.className = color;
             }
 
+            // 상단 바 업데이트
             if (s === currentCoin.s) {
                 const mainPrice = document.getElementById('display-price');
                 mainPrice.innerText = fmtPrice;
                 mainPrice.className = `main-price ${color}`;
-
-                const mainChange = document.getElementById('display-change');
-                mainChange.innerText = fmtPct;
-                mainChange.className = `stat-val ${color}`;
-
-                document.getElementById('display-high').innerText = h < 1 ? h.toFixed(5) : h.toLocaleString();
-                document.getElementById('display-low').innerText = l < 1 ? l.toFixed(5) : l.toLocaleString();
+                document.getElementById('display-change').innerText = fmtPct;
+                document.getElementById('display-change').className = `stat-val ${color}`;
+                document.getElementById('display-high').innerText = parseFloat(data.h).toLocaleString();
+                document.getElementById('display-low').innerText = parseFloat(data.l).toLocaleString();
             }
         };
 
-        loadChart(currentCoin.tv);
+        // 초기 로드
+        loadChart(currentCoin.tv, currentInterval);
     </script>
 </body>
 </html>
