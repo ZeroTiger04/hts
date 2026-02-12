@@ -3,76 +3,306 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Private Drive</title>
+    <title>Crypto Dashboard Pro</title>
+    
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; padding: 20px; }
-        h1 { text-align: center; color: #333; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .file-list { list-style: none; padding: 0; }
-        .file-item { 
-            background: white; 
-            margin-bottom: 10px; 
-            padding: 15px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            display: flex; 
-            justify-content: space-between; 
+        :root {
+            --bg-body: #0b0e11;
+            --bg-card: #161a1e;       /* 패널 배경 */
+            --bg-hover: #2b3139;      /* 호버 색상 */
+            --border: #252930;
+            --text-primary: #eaecef;
+            --text-secondary: #848e9c;
+            --text-yellow: #fcd535;
+            --up: #0ecb81;
+            --down: #f6465d;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            font-family: "Binance Plex", Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 1. 최상단 글로벌 헤더 (로고 제거됨) */
+        header {
+            height: 40px;
+            background-color: #181a20;
+            border-bottom: 1px solid var(--border);
+            display: flex;
             align-items: center;
-            transition: transform 0.2s;
+            padding: 0 20px;
+            justify-content: flex-end; /* 오른쪽 정렬 */
+            z-index: 100;
         }
-        .file-item:hover { transform: translateY(-3px); }
-        .file-name { font-weight: bold; color: #555; text-decoration: none; }
-        .btn { 
-            background-color: #4285F4; 
-            color: white; 
-            text-decoration: none; 
-            padding: 8px 15px; 
-            border-radius: 4px; 
-            font-size: 14px; 
+
+        /* 2. 정보 표시줄 (Ticker Bar) */
+        .ticker-bar {
+            height: 60px;
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 20px;
+            position: relative;
         }
-        .loading { text-align: center; margin-top: 50px; color: #888; }
+
+        /* 3. 종목 선택 드롭다운 */
+        .symbol-selector {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .current-symbol {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .current-symbol:hover { color: var(--text-yellow); }
+        .current-symbol i { font-size: 0.8rem; color: var(--text-secondary); }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 10px;
+            width: 350px;
+            background-color: #1e2329;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            z-index: 999;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .dropdown-menu.show { display: block; }
+
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #252930;
+        }
+        .menu-item:hover { background-color: var(--bg-hover); }
+
+        .item-left { display: flex; flex-direction: column; }
+        .item-symbol { font-weight: bold; font-size: 0.95rem; }
+        .item-name { font-size: 0.75rem; color: var(--text-secondary); }
+        
+        .item-right { text-align: right; }
+        .item-price { font-family: 'Roboto', sans-serif; font-weight: 500; }
+        
+        .main-price-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .main-price { font-size: 1.4rem; font-weight: bold; color: var(--up); font-family: 'Roboto', sans-serif;}
+        
+        .stat-group {
+            display: flex;
+            gap: 20px;
+        }
+        .stat-box { display: flex; flex-direction: column; font-size: 0.75rem; color: var(--text-secondary); }
+        .stat-val { font-size: 0.8rem; color: var(--text-primary); margin-top: 3px; }
+
+        .c-up { color: var(--up); }
+        .c-down { color: var(--down); }
+
+        /* 4. 차트 영역 */
+        .chart-container {
+            flex: 1;
+            background-color: var(--bg-body);
+            position: relative;
+        }
+        
+        #tv_chart_container {
+            width: 100%;
+            height: 100%;
+        }
+
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>📂 나의 클라우드 저장소</h1>
-        <div id="loading" class="loading">파일을 불러오는 중입니다...</div>
-        <ul id="fileList" class="file-list"></ul>
+    <header>
+        <div style="font-size:0.75rem; color:#848e9c;">
+            <i class="fas fa-circle" style="color: #0ecb81; font-size: 0.5rem; vertical-align: middle; margin-right: 5px;"></i>
+            WebSocket Connected
+        </div>
+    </header>
+
+    <div class="ticker-bar">
+        <div class="symbol-selector" id="symbol-btn">
+            <div class="current-symbol">
+                <span id="display-symbol">BTC/USDT</span> 
+                <i class="fas fa-caret-down"></i>
+            </div>
+            <div class="dropdown-menu" id="dropdown"></div>
+        </div>
+
+        <div class="main-price-info">
+            <div class="main-price" id="display-price">0.00</div>
+            <div class="stat-group">
+                <div class="stat-box">
+                    <span>24h Change</span>
+                    <span class="stat-val" id="display-change">0.00%</span>
+                </div>
+                <div class="stat-box">
+                    <span>24h High</span>
+                    <span class="stat-val" id="display-high">0.00</span>
+                </div>
+                <div class="stat-box">
+                    <span>24h Low</span>
+                    <span class="stat-val" id="display-low">0.00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <div id="tv_chart_container"></div>
     </div>
 
     <script>
-        // 여기에 아까 복사한 구글 앱스 스크립트의 '웹 앱 URL'을 넣으세요!
-        const API_URL = "https://script.google.com/macros/s/AKfycbyH6jWpol7xkUvhshecdl8W7EtCfNGEq7oefNP4aTVAjDBMQG0mohggWEnFOiqiiPMd/exec";
+        const coins = [
+            { id: 'btc', s: 'btcusdt', n: 'BTC', name:'Bitcoin', tv: 'BINANCE:BTCUSDT' },
+            { id: 'eth', s: 'ethusdt', n: 'ETH', name:'Ethereum', tv: 'BINANCE:ETHUSDT' },
+            { id: 'xrp', s: 'xrpusdt', n: 'XRP', name:'Ripple', tv: 'BINANCE:XRPUSDT' },
+            { id: 'sol', s: 'solusdt', n: 'SOL', name:'Solana', tv: 'BINANCE:SOLUSDT' },
+            { id: 'bnb', s: 'bnbusdt', n: 'BNB', name:'BNB', tv: 'BINANCE:BNBUSDT' },
+            { id: 'doge', s: 'dogeusdt', n: 'DOGE', name:'Dogecoin', tv: 'BINANCE:DOGEUSDT' },
+            { id: 'ada', s: 'adausdt', n: 'ADA', name:'Cardano', tv: 'BINANCE:ADAUSDT' },
+            { id: 'pepe', s: 'pepeusdt', n: 'PEPE', name:'Pepe', tv: 'BINANCE:PEPEUSDT' }
+        ];
 
-        async function loadFiles() {
-            try {
-                const response = await fetch(API_URL);
-                const files = await response.json();
-                
-                const listContainer = document.getElementById('fileList');
-                const loading = document.getElementById('loading');
-                
-                loading.style.display = 'none'; // 로딩 문구 숨김
+        let currentCoin = coins[0];
+        let tvWidget = null;
 
-                files.forEach(file => {
-                    const li = document.createElement('li');
-                    li.className = 'file-item';
-                    
-                    li.innerHTML = `
-                        <span class="file-name">📄 ${file.name}</span>
-                        <a href="${file.url}" target="_blank" class="btn">다운로드 / 보기</a>
-                    `;
-                    listContainer.appendChild(li);
-                });
-            } catch (error) {
-                console.error("에러 발생:", error);
-                document.getElementById('loading').innerText = "파일을 불러오는데 실패했습니다.";
+        const dropdownEl = document.getElementById('dropdown');
+        
+        coins.forEach(c => {
+            const item = document.createElement('div');
+            item.className = 'menu-item';
+            item.onclick = (e) => {
+                e.stopPropagation();
+                selectCoin(c);
+            };
+
+            item.innerHTML = `
+                <div class="item-left">
+                    <span class="item-symbol">${c.n}/USDT</span>
+                    <span class="item-name">${c.name}</span>
+                </div>
+                <div class="item-right">
+                    <div class="item-price" id="menu-price-${c.s}">-</div>
+                    <div style="font-size:0.75rem; color:#848e9c;" id="menu-change-${c.s}">0.00%</div>
+                </div>
+            `;
+            dropdownEl.appendChild(item);
+        });
+
+        const btn = document.getElementById('symbol-btn');
+        btn.addEventListener('click', () => {
+            dropdownEl.classList.toggle('show');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!btn.contains(e.target)) {
+                dropdownEl.classList.remove('show');
             }
+        });
+
+        function selectCoin(coin) {
+            currentCoin = coin;
+            document.getElementById('display-symbol').innerText = `${coin.n}/USDT`;
+            loadChart(coin.tv);
+            dropdownEl.classList.remove('show');
+            document.getElementById('display-price').style.color = '#eaecef';
         }
 
-        // 페이지 로드 시 실행
-        loadFiles();
+        function loadChart(symbol) {
+            if(document.getElementById('tv_chart_container').innerHTML !== "") {
+                document.getElementById('tv_chart_container').innerHTML = "";
+            }
+
+            tvWidget = new TradingView.widget({
+                "autosize": true,
+                "symbol": symbol,
+                "interval": "D",
+                "timezone": "Asia/Seoul",
+                "theme": "dark",
+                "style": "1",
+                "locale": "kr",
+                "toolbar_bg": "#161a1e",
+                "enable_publishing": false,
+                "hide_side_toolbar": false,
+                "container_id": "tv_chart_container",
+                "overrides": {
+                    "paneProperties.background": "#0b0e11",
+                    "paneProperties.vertGridProperties.color": "#1e2329",
+                    "paneProperties.horzGridProperties.color": "#1e2329",
+                }
+            });
+        }
+
+        const streams = coins.map(c => `${c.s}@ticker`).join('/');
+        const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const s = data.s.toLowerCase();
+            const p = parseFloat(data.c);   
+            const P = parseFloat(data.P);   
+            const h = parseFloat(data.h);   
+            const l = parseFloat(data.l);   
+
+            const fmtPrice = p < 1 ? p.toFixed(5) : p.toLocaleString(undefined, {minimumFractionDigits:2});
+            const fmtPct = (P > 0 ? "+" : "") + P.toFixed(2) + "%";
+            const color = P >= 0 ? 'c-up' : 'c-down';
+
+            const menuPrice = document.getElementById(`menu-price-${s}`);
+            const menuChange = document.getElementById(`menu-change-${s}`);
+            if(menuPrice) {
+                menuPrice.innerText = fmtPrice;
+                menuPrice.className = `item-price ${color}`;
+                menuChange.innerText = fmtPct;
+                menuChange.className = color;
+            }
+
+            if (s === currentCoin.s) {
+                const mainPrice = document.getElementById('display-price');
+                mainPrice.innerText = fmtPrice;
+                mainPrice.className = `main-price ${color}`;
+
+                const mainChange = document.getElementById('display-change');
+                mainChange.innerText = fmtPct;
+                mainChange.className = `stat-val ${color}`;
+
+                document.getElementById('display-high').innerText = h < 1 ? h.toFixed(5) : h.toLocaleString();
+                document.getElementById('display-low').innerText = l < 1 ? l.toFixed(5) : l.toLocaleString();
+            }
+        };
+
+        loadChart(currentCoin.tv);
     </script>
 </body>
 </html>
