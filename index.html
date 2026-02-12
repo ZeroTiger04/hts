@@ -556,139 +556,89 @@
       style:             '1',
       locale:            'kr',
       toolbar_bg:        '#0d1017',
-
-      /* ── Studies ── */
-      studies: [
-        { id: 'MAExp@tv-basicstudies', inputs: { in_0: 20  } },
-        { id: 'MAExp@tv-basicstudies', inputs: { in_0: 60  } },
-        { id: 'MAExp@tv-basicstudies', inputs: { in_0: 120 } },
-        { id: 'MAExp@tv-basicstudies', inputs: { in_0: 200 } },
-        { id: 'RSI@tv-basicstudies' },
-      ],
-
-      /* ── Study overrides: 인덱스 0~3 = EMA 20/60/120/200 ── */
-      studies_overrides: {
-        /* Volume */
-        'volume.volume.color.0': '#ff3a5c55',
-        'volume.volume.color.1': '#00e87a55',
-
-        /* EMA 20 — 주황 */
-        'moving average exponential.0.plot.color':     '#ff8c00',
-        'moving average exponential.0.plot.linewidth': 1,
-        /* EMA 60 — 초록 */
-        'moving average exponential.1.plot.color':     '#00e87a',
-        'moving average exponential.1.plot.linewidth': 1,
-        /* EMA 120 — 빨강 */
-        'moving average exponential.2.plot.color':     '#ff3a5c',
-        'moving average exponential.2.plot.linewidth': 1,
-        /* EMA 200 — 파랑 */
-        'moving average exponential.3.plot.color':     '#4d9fff',
-        'moving average exponential.3.plot.linewidth': 2,
-
-        /* RSI — 골드 */
-        'relative strength index.plot.color':                  '#c8a84b',
-        'relative strength index.plot.linewidth':              1,
-        'relative strength index.upper band.color':            '#1a2035',
-        'relative strength index.lower band.color':            '#1a2035',
-        'relative strength index.hlines background.color':     '#c8a84b08',
-      },
-
       enable_publishing: false,
       hide_top_toolbar:  true,
       hide_side_toolbar: false,
       container_id:      'tv_chart_container',
       loading_screen:    { backgroundColor: '#060810', foregroundColor: '#c8a84b' },
+      studies_overrides: {
+        'volume.volume.color.0': '#ff3a5c55',
+        'volume.volume.color.1': '#00e87a55',
+        'relative strength index.plot.color':              '#c8a84b',
+        'relative strength index.plot.linewidth':          1,
+        'relative strength index.upper band.color':        '#1a2035',
+        'relative strength index.lower band.color':        '#1a2035',
+        'relative strength index.hlines background.color': '#c8a84b08',
+      },
       overrides: {
-        /* ── Background ── */
-        'paneProperties.background':                           '#060810',
-        'paneProperties.backgroundGradientStartColor':         '#060810',
-        'paneProperties.backgroundGradientEndColor':           '#060810',
-        'paneProperties.backgroundType':                       'solid',
-
-        /* ── Grid ── */
-        'paneProperties.vertGridProperties.color':             '#0f1420',
-        'paneProperties.vertGridProperties.style':             1,
-        'paneProperties.horzGridProperties.color':             '#0f1420',
-        'paneProperties.horzGridProperties.style':             1,
-
-        /* ── Crosshair ── */
-        'paneProperties.crossHairProperties.color':            '#c8a84b',
-        'paneProperties.crossHairProperties.style':            1,
-        'paneProperties.crossHairProperties.width':            1,
-
-        /* ── Scales / Axes ── */
-        'scalesProperties.textColor':                          '#4e5a72',
-        'scalesProperties.lineColor':                          '#1a2035',
-        'scalesProperties.fontSize':                           11,
-        'scalesProperties.backgroundColor':                    '#060810',
-
-        /* ── Candles ── */
-        'mainSeriesProperties.candleStyle.upColor':            '#00e87a',
-        'mainSeriesProperties.candleStyle.downColor':          '#ff3a5c',
-        'mainSeriesProperties.candleStyle.borderUpColor':      '#00e87a',
-        'mainSeriesProperties.candleStyle.borderDownColor':    '#ff3a5c',
-        'mainSeriesProperties.candleStyle.wickUpColor':        '#00e87a80',
-        'mainSeriesProperties.candleStyle.wickDownColor':      '#ff3a5c80',
+        /* Background */
+        'paneProperties.background':                             '#060810',
+        'paneProperties.backgroundGradientStartColor':           '#060810',
+        'paneProperties.backgroundGradientEndColor':             '#060810',
+        'paneProperties.backgroundType':                         'solid',
+        /* Grid */
+        'paneProperties.vertGridProperties.color':               '#0f1420',
+        'paneProperties.vertGridProperties.style':               1,
+        'paneProperties.horzGridProperties.color':               '#0f1420',
+        'paneProperties.horzGridProperties.style':               1,
+        /* Crosshair */
+        'paneProperties.crossHairProperties.color':              '#c8a84b',
+        'paneProperties.crossHairProperties.style':              1,
+        'paneProperties.crossHairProperties.width':              1,
+        /* Scales */
+        'scalesProperties.textColor':                            '#4e5a72',
+        'scalesProperties.lineColor':                            '#1a2035',
+        'scalesProperties.fontSize':                             11,
+        'scalesProperties.backgroundColor':                      '#060810',
+        'scalesProperties.showSeriesLastValue':                  true,
+        'scalesProperties.showStudyLastValue':                   true,
+        'scalesProperties.showStudyPlotLabels':                  true,
+        'scalesProperties.showSymbolLabels':                     true,
+        /* Candles */
+        'mainSeriesProperties.candleStyle.upColor':              '#00e87a',
+        'mainSeriesProperties.candleStyle.downColor':            '#ff3a5c',
+        'mainSeriesProperties.candleStyle.borderUpColor':        '#00e87a',
+        'mainSeriesProperties.candleStyle.borderDownColor':      '#ff3a5c',
+        'mainSeriesProperties.candleStyle.wickUpColor':          '#00e87a80',
+        'mainSeriesProperties.candleStyle.wickDownColor':        '#ff3a5c80',
         'mainSeriesProperties.candleStyle.barColorsOnPrevClose': false,
-
-        /* ── Volume ── */
-        'volume.volume.color.0':                               '#ff3a5c55',
-        'volume.volume.color.1':                               '#00e87a55',
-        'volume.volume ma.visible':                            false,
-
-        /* ── Price line ── */
-        'mainSeriesProperties.priceLineColor':                 '#c8a84b',
-        'mainSeriesProperties.priceLineWidth':                 1,
-
-        /* ── Countdown ── */
-        'mainSeriesProperties.showCountdown':                  true,
-
-        /* ── Right scale labels ── */
-        'scalesProperties.showSeriesLastValue':                true,
-        'scalesProperties.showStudyLastValue':                 true,
-        'scalesProperties.showSymbolLabels':                   true,
-        'scalesProperties.showStudyPlotLabels':                true,
-        'mainSeriesProperties.showPriceLine':                  true,
-        'mainSeriesProperties.showPrevClosePriceLine':         true,
-        'mainSeriesProperties.prevClosePriceLineWidth':        1,
-        'mainSeriesProperties.prevClosePriceLineColor':        '#4e5a72',
+        /* Price / prev close line */
+        'mainSeriesProperties.showPriceLine':                    true,
+        'mainSeriesProperties.priceLineColor':                   '#c8a84b',
+        'mainSeriesProperties.priceLineWidth':                   1,
+        'mainSeriesProperties.showPrevClosePriceLine':           true,
+        'mainSeriesProperties.prevClosePriceLineColor':          '#4e5a72',
+        'mainSeriesProperties.prevClosePriceLineWidth':          1,
+        /* Countdown */
+        'mainSeriesProperties.showCountdown':                    true,
+        /* Volume */
+        'volume.volume.color.0':                                 '#ff3a5c55',
+        'volume.volume.color.1':                                 '#00e87a55',
       }
     });
 
     tvWidget.onChartReady(() => {
       const chart = tvWidget.chart();
 
-      /* ── EMA 20 주황 ── */
-      chart.createStudy('Moving Average Exponential', false, false,
-        { length: 20, source: 'close' },
-        { 'moving average exponential.ma.color': '#ff8c00', 'moving average exponential.ma.linewidth': 1 }
-      );
-      /* ── EMA 60 초록 ── */
-      chart.createStudy('Moving Average Exponential', false, false,
-        { length: 60, source: 'close' },
-        { 'moving average exponential.ma.color': '#00e87a', 'moving average exponential.ma.linewidth': 1 }
-      );
-      /* ── EMA 120 빨강 ── */
-      chart.createStudy('Moving Average Exponential', false, false,
-        { length: 120, source: 'close' },
-        { 'moving average exponential.ma.color': '#ff3a5c', 'moving average exponential.ma.linewidth': 1 }
-      );
-      /* ── EMA 200 파랑 ── */
-      chart.createStudy('Moving Average Exponential', false, false,
-        { length: 200, source: 'close' },
-        { 'moving average exponential.ma.color': '#4d9fff', 'moving average exponential.ma.linewidth': 2 }
-      );
-      /* ── RSI 골드 ── */
-      chart.createStudy('Relative Strength Index', false, false,
-        { length: 14, source: 'close' },
-        {
-          'relative strength index.plot.color':              '#c8a84b',
-          'relative strength index.plot.linewidth':          1,
-          'relative strength index.upper band.color':        '#1a2035',
-          'relative strength index.lower band.color':        '#1a2035',
-          'relative strength index.hlines background.color': '#c8a84b08',
-        }
-      );
+      // EMA는 createStudy 후 Promise로 ID 받아서 색 직접 적용
+      const emaList = [
+        { len: 20,  color: '#ff8c00', width: 1 },
+        { len: 60,  color: '#00e87a', width: 1 },
+        { len: 120, color: '#ff3a5c', width: 1 },
+        { len: 200, color: '#4d9fff', width: 2 },
+      ];
+
+      emaList.forEach(({ len, color, width }) => {
+        chart.createStudy(
+          'Moving Average Exponential',
+          false, false,
+          [len],
+          { 'MA.color': color, 'MA.linewidth': width }
+        );
+      });
+
+      // RSI
+      chart.createStudy('Relative Strength Index', false, false, [14]);
     });
   }
 
