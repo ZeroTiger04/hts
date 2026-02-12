@@ -537,7 +537,7 @@
     loadChart(currentCoin.tv, interval);
   }
 
-  /* ─── Load TradingView chart (업데이트됨) ─── */
+  /* ─── Load TradingView chart (전체 옵션 활성화됨) ─── */
   function loadChart(symbol, interval) {
     document.getElementById('tv_chart_container').innerHTML = '';
     tvWidget = new TradingView.widget({
@@ -579,18 +579,20 @@
         'paneProperties.crossHairProperties.style':              1,
         'paneProperties.crossHairProperties.width':              1,
         
-        /* ─── Scales (라벨 설정 전체 활성화) ─── */
+        /* ─── Scales (이미지 내 모든 항목 체크) ─── */
         'scalesProperties.textColor':                            '#4e5a72',
         'scalesProperties.lineColor':                            '#1a2035',
         'scalesProperties.fontSize':                             11,
         'scalesProperties.backgroundColor':                      '#060810',
         
-        'scalesProperties.showSeriesLastValue':                  true, // 현재가 라벨
-        'scalesProperties.showStudyLastValue':                   true, // 지표 값 라벨
-        'scalesProperties.showStudyPlotLabels':                  true, // 지표 이름 라벨
-        'scalesProperties.showSymbolLabels':                     true, // 심볼 이름 라벨
-        'scalesProperties.showBidAskLabels':                     true, // 매수/매도 라벨 (추가됨)
-        'scalesProperties.showHighLowPriceLabels':               true, // 고가/저가 라벨 (추가됨)
+        'scalesProperties.showSymbolLabels':                     true, // 심볼네임 라벨
+        'scalesProperties.showSeriesLastValue':                  true, // 심볼 현재가 라벨
+        'scalesProperties.showSeriesPrevCloseValue':             true, // 심볼 전일종가 라벨 (추가)
+        'scalesProperties.showHighLowPriceLabels':               true, // 하이, 로우 프라이스 라벨
+        'scalesProperties.showStudyPlotLabels':                  true, // 인디케이터 이름 라벨
+        'scalesProperties.showStudyLastValue':                   true, // 인디케이터 밸류 라벨
+        'scalesProperties.showBidAskLabels':                     true, // (옵션) 매수/매도 라벨
+        'scalesProperties.alignLabels':                          true, // 오버래핑 라벨 없음 (체크)
 
         /* Candles */
         'mainSeriesProperties.candleStyle.upColor':              '#00e87a',
@@ -601,21 +603,22 @@
         'mainSeriesProperties.candleStyle.wickDownColor':        '#ff3a5c80',
         'mainSeriesProperties.candleStyle.barColorsOnPrevClose': false,
         
-        /* ─── Lines (라인 설정 전체 활성화) ─── */
+        /* ─── Lines & Others (이미지 내 모든 항목 체크) ─── */
         'mainSeriesProperties.showPriceLine':                    true,     // 현재가 라인
         'mainSeriesProperties.priceLineColor':                   '#c8a84b',
         'mainSeriesProperties.priceLineWidth':                   1,
         
-        'mainSeriesProperties.showPrevClosePriceLine':           true,     // 전일 종가 라인
+        'mainSeriesProperties.showPrevClosePriceLine':           true,     // 전일종가 라인
         'mainSeriesProperties.prevClosePriceLineColor':          '#4e5a72',
         'mainSeriesProperties.prevClosePriceLineWidth':          1,
         
-        'mainSeriesProperties.highLowPriceLines.visible':        true,     // 최고가/최저가 라인 (추가됨)
+        'mainSeriesProperties.showPrePostMarketPriceLine':       true,     // 프리/포스트 마켓 프라이스 라벨 (체크)
+
+        'mainSeriesProperties.highLowPriceLines.visible':        true,     // 하이/로우 라인
         'mainSeriesProperties.highLowPriceLines.color':          '#4e5a72',
         'mainSeriesProperties.highLowPriceLines.width':          1,
 
-        /* Countdown */
-        'mainSeriesProperties.showCountdown':                    true,
+        'mainSeriesProperties.showCountdown':                    true,     // 봉완성 카운트다운 (체크)
         
         /* Volume */
         'volume.volume.color.0':                                 '#ff3a5c55',
@@ -626,7 +629,7 @@
     tvWidget.onChartReady(() => {
       const chart = tvWidget.chart();
 
-      // EMA는 createStudy 후 Promise로 ID 받아서 색 직접 적용
+      // EMA
       const emaList = [
         { len: 20,  color: '#ff8c00', width: 1 },
         { len: 60,  color: '#00e87a', width: 1 },
