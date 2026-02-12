@@ -43,7 +43,6 @@
     font-family: var(--sans);
   }
 
-  /* ── Dot-grid background ── */
   body::before {
     content: '';
     position: fixed; inset: 0;
@@ -54,7 +53,6 @@
     z-index: 0;
   }
 
-  /* ── Layout shell ── */
   .shell {
     position: relative;
     z-index: 1;
@@ -63,9 +61,6 @@
     height: 100vh;
   }
 
-  /* ══════════════════════════════
-      HEADER
-  ══════════════════════════════ */
   header {
     height: 44px;
     background: rgba(9,12,19,.92);
@@ -110,9 +105,6 @@
   }
   .ws-badge.connected { color: var(--text-pri); }
 
-  /* ══════════════════════════════
-      TICKER BAR
-  ══════════════════════════════ */
   .ticker-bar {
     height: 64px;
     background: rgba(13,16,23,.96);
@@ -125,7 +117,6 @@
     position: relative;
   }
 
-  /* Symbol selector */
   .symbol-selector {
     position: relative;
     cursor: pointer;
@@ -182,7 +173,6 @@
   }
   .symbol-selector.open .caret { transform: rotate(180deg); }
 
-  /* Dropdown */
   .dropdown-menu {
     display: none;
     position: absolute;
@@ -271,7 +261,6 @@
   .item-pct.up  { color: var(--up);   background: var(--up-glow); }
   .item-pct.down{ color: var(--down); background: var(--down-glow); }
 
-  /* ── Interval buttons ── */
   .interval-group {
     display: flex;
     align-items: center;
@@ -300,7 +289,6 @@
     font-weight: 500;
   }
 
-  /* ── Price display ── */
   .price-block { display: flex; align-items: center; gap: 28px; }
 
   .main-price-wrap { display: flex; flex-direction: column; gap: 2px; }
@@ -321,7 +309,6 @@
   .main-price.up   { color: var(--up); }
   .main-price.down { color: var(--down); }
 
-  /* Flash animation on price update */
   @keyframes flashUp {
     0%   { text-shadow: 0 0 20px var(--up-glow); }
     100% { text-shadow: none; }
@@ -351,7 +338,6 @@
   .stat-val.up   { color: var(--up); }
   .stat-val.down { color: var(--down); }
 
-  /* ── Divider ── */
   .vdiv {
     width: 1px;
     height: 32px;
@@ -359,9 +345,6 @@
     flex-shrink: 0;
   }
 
-  /* ══════════════════════════════
-      CHART
-  ══════════════════════════════ */
   .chart-container {
     flex: 1;
     position: relative;
@@ -395,7 +378,7 @@
 
       <div class="dropdown-menu" id="dropdown">
         <div class="dropdown-header">Select Market</div>
-        </div>
+      </div>
     </div>
 
     <div class="interval-group" id="interval-group">
@@ -447,7 +430,6 @@
 </div>
 
 <script>
-  /* ─── Coin definitions ─── */
   const coins = [
     { id:'btc',  s:'btcusdt',  n:'BTC',  name:'Bitcoin',  tv:'BINANCE:BTCUSDT',  logo:'https://assets.coingecko.com/coins/images/1/small/bitcoin.png' },
     { id:'eth',  s:'ethusdt',  n:'ETH',  name:'Ethereum', tv:'BINANCE:ETHUSDT',  logo:'https://assets.coingecko.com/coins/images/279/small/ethereum.png' },
@@ -464,7 +446,6 @@
   let tvWidget        = null;
   let lastPrices      = {};
 
-  /* ─── Helper Functions ─── */
   function fmtPrice(p) {
     if (p < 0.0001)   return p.toFixed(8);
     if (p < 0.01)     return p.toFixed(6);
@@ -521,7 +502,6 @@
     loadChart(coin.tv, currentInterval);
     dropdownEl.classList.remove('show');
     symbolBtn.classList.remove('open');
-    // reset UI stats
     ['display-price','display-change','display-high','display-low','display-vol']
       .forEach(id => document.getElementById(id).textContent = '—');
   }
@@ -536,7 +516,7 @@
   /* ─── Load TradingView chart ─── */
   function loadChart(symbol, interval) {
     document.getElementById('tv_chart_container').innerHTML = '';
-    
+
     tvWidget = new TradingView.widget({
       autosize:          true,
       symbol:            symbol,
@@ -550,21 +530,18 @@
       hide_top_toolbar:  true,
       hide_side_toolbar: false,
       container_id:      'tv_chart_container',
-      
-      // [핵심] 로컬 스토리지 무시 -> 설정 꼬임 방지
+
       disabled_features: ['use_localstorage_for_settings', 'header_symbol_search'],
       enabled_features:  ['show_popup_button'],
 
-      loading_screen:    { backgroundColor: '#060810', foregroundColor: '#c8a84b' },
-      
+      loading_screen: { backgroundColor: '#060810', foregroundColor: '#c8a84b' },
+
       studies_overrides: {
-        // 전역 스타일 설정
         'volume.volume.color.0': '#ff3a5c55',
         'volume.volume.color.1': '#00e87a55',
       },
 
       overrides: {
-        /* ─── 배경/그리드 ─── */
         'paneProperties.background':                             '#060810',
         'paneProperties.backgroundGradientStartColor':           '#060810',
         'paneProperties.backgroundGradientEndColor':             '#060810',
@@ -574,24 +551,21 @@
         'paneProperties.horzGridProperties.color':               '#0f1420',
         'paneProperties.horzGridProperties.style':               1,
         'paneProperties.crossHairProperties.color':              '#c8a84b',
-        
-        /* ─── 스케일 & 라벨 (전부 강제 켜기) ─── */
+
         'scalesProperties.textColor':                            '#4e5a72',
         'scalesProperties.lineColor':                            '#1a2035',
         'scalesProperties.fontSize':                             11,
         'scalesProperties.backgroundColor':                      '#060810',
-        
-        'scalesProperties.showSymbolLabels':                     true, 
-        'scalesProperties.showSeriesLastValue':                  true, 
-        'scalesProperties.showSeriesPrevCloseValue':             true, // [ON] 전일종가 라벨
-        'scalesProperties.showPrePostMarketPriceLabel':          true, // [ON] 프리/포스트마켓 라벨
-        'scalesProperties.showHighLowPriceLabels':               true, // [ON] 고가/저가 라벨
-        'scalesProperties.showStudyPlotLabels':                  true, // [ON] 지표 이름
-        'scalesProperties.showStudyLastValue':                   true, // [ON] 지표 값
-        'scalesProperties.showBidAskLabels':                     true, // [ON] 매수/매도 라벨
-        'scalesProperties.alignLabels':                          true, // [ON] 라벨 겹침 방지
+        'scalesProperties.showSymbolLabels':                     true,
+        'scalesProperties.showSeriesLastValue':                  true,
+        'scalesProperties.showSeriesPrevCloseValue':             true,
+        'scalesProperties.showPrePostMarketPriceLabel':          true,
+        'scalesProperties.showHighLowPriceLabels':               true,
+        'scalesProperties.showStudyPlotLabels':                  true,
+        'scalesProperties.showStudyLastValue':                   true,
+        'scalesProperties.showBidAskLabels':                     true,
+        'scalesProperties.alignLabels':                          true,
 
-        /* ─── 캔들 스타일 ─── */
         'mainSeriesProperties.candleStyle.upColor':              '#00e87a',
         'mainSeriesProperties.candleStyle.downColor':            '#ff3a5c',
         'mainSeriesProperties.candleStyle.borderUpColor':        '#00e87a',
@@ -599,30 +573,30 @@
         'mainSeriesProperties.candleStyle.wickUpColor':          '#00e87a80',
         'mainSeriesProperties.candleStyle.wickDownColor':        '#ff3a5c80',
         'mainSeriesProperties.candleStyle.barColorsOnPrevClose': false,
-        
-        /* ─── 차트 위 라인들 ─── */
-        'mainSeriesProperties.showPriceLine':                    true,     
+
+        'mainSeriesProperties.showPriceLine':                    true,
         'mainSeriesProperties.priceLineColor':                   '#c8a84b',
         'mainSeriesProperties.priceLineWidth':                   1,
-        
-        'mainSeriesProperties.showPrevClosePriceLine':           true, // [ON] 전일종가 라인
+
+        'mainSeriesProperties.showPrevClosePriceLine':           true,
         'mainSeriesProperties.prevClosePriceLineColor':          '#4e5a72',
         'mainSeriesProperties.prevClosePriceLineWidth':          1,
-        
-        'mainSeriesProperties.showPrePostMarketPriceLine':       true, // [ON] 프리장 라인
-        
-        'mainSeriesProperties.highLowPriceLines.visible':        true, // [ON] 고/저 라인
+
+        'mainSeriesProperties.showPrePostMarketPriceLine':       true,
+
+        'mainSeriesProperties.highLowPriceLines.visible':        true,
         'mainSeriesProperties.highLowPriceLines.color':          '#4e5a72',
         'mainSeriesProperties.highLowPriceLines.width':          1,
 
-        'mainSeriesProperties.showCountdown':                    true, // [ON] 카운트다운
+        'mainSeriesProperties.showCountdown':                    true,
       }
     });
 
     tvWidget.onChartReady(() => {
       const chart = tvWidget.chart();
 
-      // [수정됨] 지표 추가 (overrides 문법 엄격 적용)
+      // ── EMA 지표 ──────────────────────────────────────────────
+      // 핵심 수정: overrides를 5번째 파라미터로 이동 (null 제거)
       const emaList = [
         { len: 20,  color: '#ff8c00', width: 1 },
         { len: 60,  color: '#00e87a', width: 1 },
@@ -630,35 +604,39 @@
         { len: 200, color: '#4d9fff', width: 2 },
       ];
 
-      // EMA 생성
       emaList.forEach(ema => {
         chart.createStudy(
           'Moving Average Exponential',
-          false, 
-          false, 
-          [ema.len], 
-          null,
-          { 'Plot.color': ema.color, 'Plot.linewidth': ema.width } // 스타일 지정
+          false,
+          false,
+          { length: ema.len },          // inputs: 객체 형식
+          {                             // overrides: 5번째 파라미터 (기존엔 null이었던 자리)
+            'Plot.color':     ema.color,
+            'Plot.linewidth': ema.width,
+            'Plot.visible':   true,
+          }
         );
       });
 
-      // RSI 생성
+      // ── RSI 지표 ──────────────────────────────────────────────
       chart.createStudy(
         'Relative Strength Index',
-        false, 
-        false, 
-        [14], 
-        null,
-        {
-            'Plot.color': '#c8a84b',           // RSI 선 색상
-            'Upper Limit.color': '#4e5a72',    // 과매수 선
-            'Lower Limit.color': '#4e5a72',    // 과매도 선
+        false,
+        false,
+        { length: 14 },               // inputs: 객체 형식
+        {                             // overrides: 5번째 파라미터
+          'RSI.color':         '#c8a84b',
+          'RSI.linewidth':     2,
+          'RSI.visible':       true,
+          'Upper Limit.color': '#4e5a72',
+          'Lower Limit.color': '#4e5a72',
+          'Hlines Background.color': '#c8a84b10',
         }
       );
     });
   }
 
-  /* ─── WebSocket Logic (with Reconnect) ─── */
+  /* ─── WebSocket ─── */
   const streams = coins.map(c => `${c.s}@ticker`).join('/');
   let ws = null;
 
@@ -666,8 +644,8 @@
     if (ws) ws.close();
     ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
 
-    const badge   = document.getElementById('ws-badge');
-    const wsText  = document.getElementById('ws-text');
+    const badge  = document.getElementById('ws-badge');
+    const wsText = document.getElementById('ws-text');
 
     ws.onopen = () => {
       badge.classList.add('connected');
@@ -677,7 +655,7 @@
     ws.onclose = () => {
       badge.classList.remove('connected');
       wsText.textContent = 'RECONNECTING';
-      setTimeout(connectWs, 3000); // 3초 후 재연결
+      setTimeout(connectWs, 3000);
     };
 
     ws.onerror = (err) => {
@@ -694,7 +672,6 @@
       const dirCls = isUp ? 'up' : 'down';
       const pctStr = (isUp ? '+' : '') + P.toFixed(2) + '%';
 
-      /* Dropdown Update */
       const mPrice = document.getElementById(`menu-price-${s}`);
       const mPct   = document.getElementById(`menu-pct-${s}`);
       if (mPrice) {
@@ -704,7 +681,6 @@
         mPct.className     = `item-pct ${dirCls}`;
       }
 
-      /* Main Display Update */
       if (s === currentCoin.s) {
         const priceEl = document.getElementById('display-price');
         const prev    = lastPrices[s];
@@ -714,7 +690,7 @@
 
         if (prev !== undefined) {
           priceEl.classList.remove('flash-up','flash-down');
-          void priceEl.offsetWidth; 
+          void priceEl.offsetWidth;
           priceEl.classList.add(p >= prev ? 'flash-up' : 'flash-down');
         }
         lastPrices[s] = p;
@@ -725,12 +701,11 @@
 
         document.getElementById('display-high').textContent = fmtPrice(parseFloat(d.h));
         document.getElementById('display-low').textContent  = fmtPrice(parseFloat(d.l));
-        document.getElementById('display-vol').textContent  = fmtVol(parseFloat(d.q)); 
+        document.getElementById('display-vol').textContent  = fmtVol(parseFloat(d.q));
       }
     };
   }
 
-  /* ─── Init ─── */
   connectWs();
   loadChart(currentCoin.tv, currentInterval);
 </script>
