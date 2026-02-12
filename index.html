@@ -537,8 +537,14 @@
       loading_screen: { backgroundColor: '#060810', foregroundColor: '#c8a84b' },
 
       studies_overrides: {
-        'volume.volume.color.0': '#ff3a5c55',
-        'volume.volume.color.1': '#00e87a55',
+        // Volume
+        'volume.volume.color.0':                                 '#ff3a5c55',
+        'volume.volume.color.1':                                 '#00e87a55',
+        // RSI 전역 스타일 (createStudy 백업)
+        'relative strength index.plot.color':                    '#c8a84b',
+        'relative strength index.plot.linewidth':                2,
+        'relative strength index.upper limit.color':             '#4e5a72',
+        'relative strength index.lower limit.color':             '#4e5a72',
       },
 
       overrides: {
@@ -596,7 +602,7 @@
       const chart = tvWidget.chart();
 
       // ── EMA 지표 ──────────────────────────────────────────────
-      // 핵심 수정: overrides를 5번째 파라미터로 이동 (null 제거)
+      // ★ inputs는 반드시 배열([]) — 객체({})로 넣으면 생성 실패
       const emaList = [
         { len: 20,  color: '#ff8c00', width: 1 },
         { len: 60,  color: '#00e87a', width: 1 },
@@ -605,34 +611,37 @@
       ];
 
       emaList.forEach(ema => {
-        chart.createStudy(
-          'Moving Average Exponential',
-          false,
-          false,
-          { length: ema.len },          // inputs: 객체 형식
-          {                             // overrides: 5번째 파라미터 (기존엔 null이었던 자리)
-            'Plot.color':     ema.color,
-            'Plot.linewidth': ema.width,
-            'Plot.visible':   true,
-          }
-        );
+        try {
+          chart.createStudy(
+            'Moving Average Exponential',
+            false,  // forceOverlay — 메인 캔들 차트 위에 표시
+            false,  // lock
+            [ema.len],   // ★ 배열 형식 inputs
+            {            // overrides (5번째 파라미터)
+              'Plot.color':     ema.color,
+              'Plot.linewidth': ema.width,
+              'Plot.visible':   true,
+            }
+          );
+        } catch(e) { console.error('EMA createStudy error', ema.len, e); }
       });
 
       // ── RSI 지표 ──────────────────────────────────────────────
-      chart.createStudy(
-        'Relative Strength Index',
-        false,
-        false,
-        { length: 14 },               // inputs: 객체 형식
-        {                             // overrides: 5번째 파라미터
-          'RSI.color':         '#c8a84b',
-          'RSI.linewidth':     2,
-          'RSI.visible':       true,
-          'Upper Limit.color': '#4e5a72',
-          'Lower Limit.color': '#4e5a72',
-          'Hlines Background.color': '#c8a84b10',
-        }
-      );
+      try {
+        chart.createStudy(
+          'Relative Strength Index',
+          false,
+          false,
+          [14],        // ★ 배열 형식 inputs
+          {
+            'Plot.color':        '#c8a84b',
+            'Plot.linewidth':    2,
+            'Plot.visible':      true,
+            'Upper Limit.color': '#4e5a72',
+            'Lower Limit.color': '#4e5a72',
+          }
+        );
+      } catch(e) { console.error('RSI createStudy error', e); }
     });
   }
 
