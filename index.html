@@ -10,15 +10,15 @@
 
     <style>
         :root {
-            --bg-body: #0b0e11;       /* 바이낸스 배경 */
+            --bg-body: #0b0e11;
             --bg-card: #1e2329;
             --bg-hover: #2b3139;
             --border: #252930;
             --text-primary: #eaecef;
             --text-secondary: #848e9c;
             --text-yellow: #fcd535;
-            --up: #0ecb81;            /* 상승 (초록) */
-            --down: #f6465d;          /* 하락 (빨강) */
+            --up: #0ecb81;
+            --down: #f6465d;
         }
 
         * { box-sizing: border-box; }
@@ -36,34 +36,28 @@
 
         /* 헤더 */
         header {
-            height: 50px;
-            background-color: #181a20;
-            border-bottom: 1px solid var(--border);
+            height: 50px; background-color: #181a20; border-bottom: 1px solid var(--border);
             display: flex; align-items: center; padding: 0 20px; justify-content: space-between;
         }
         .logo { font-size: 1.3rem; font-weight: bold; color: var(--text-yellow); display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 1px; }
 
         /* 티커 바 */
         .ticker-bar {
-            height: 60px;
-            background-color: #161a1e;
-            border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; padding: 0 20px; gap: 20px;
-            position: relative;
+            height: 60px; background-color: #161a1e; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; padding: 0 20px; gap: 20px; position: relative;
         }
 
-        /* 종목 선택 */
+        /* 종목 선택기 */
         .symbol-selector { position: relative; cursor: pointer; }
         .current-symbol-box { display: flex; align-items: center; gap: 10px; font-size: 1.4rem; font-weight: bold; }
         .current-symbol-box:hover { color: var(--text-yellow); }
-        
         .market-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; background: #333; color: #aaa; }
         .badge-spot { background: #fcd535; color: #000; }
         .badge-future { background: #ff5500; color: #fff; }
 
-        /* 드롭다운 */
+        /* 드롭다운 메뉴 */
         .dropdown-menu {
-            display: none; position: absolute; top: 100%; left: 0; margin-top: 10px; width: 400px;
+            display: none; position: absolute; top: 100%; left: 0; margin-top: 10px; width: 350px;
             background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 4px;
             box-shadow: 0 10px 20px rgba(0,0,0,0.5); z-index: 999;
         }
@@ -75,7 +69,6 @@
 
         .coin-list-container { max-height: 400px; overflow-y: auto; display: none; }
         .coin-list-container.active { display: block; }
-        
         .menu-item { display: flex; justify-content: space-between; padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #252930; }
         .menu-item:hover { background-color: var(--bg-hover); }
 
@@ -84,45 +77,32 @@
         .stat-group { display: flex; gap: 20px; }
         .stat-box { display: flex; flex-direction: column; font-size: 0.75rem; color: var(--text-secondary); }
         .stat-val { font-size: 0.8rem; color: var(--text-primary); margin-top: 3px; }
-
         .c-up { color: var(--up); } .c-down { color: var(--down); }
 
-        /* 차트 영역 */
-        .chart-wrapper {
-            flex: 1;
-            position: relative;
-            background-color: var(--bg-body);
-            width: 100%;
+        /* 차트 레이아웃 */
+        .chart-layout {
+            flex: 1; display: flex; flex-direction: column; background-color: var(--bg-body); position: relative;
         }
-        #chart { width: 100%; height: 100%; }
-        
-        /* 지표 범례 (Legend) */
-        .chart-legend {
-            position: absolute;
-            top: 10px; left: 10px;
-            z-index: 10;
-            font-size: 12px;
-            font-family: 'Roboto', sans-serif;
-            pointer-events: none; /* 클릭 통과 */
-            background: rgba(11, 14, 17, 0.7);
-            padding: 5px;
-            border-radius: 4px;
-        }
-        .legend-item { display: inline-block; margin-right: 10px; }
+        #chart-area { flex: 4; width: 100%; position: relative; } /* 캔들 차트 (80%) */
+        #rsi-area { flex: 1; width: 100%; border-top: 1px solid var(--border); position: relative; } /* RSI 차트 (20%) */
 
-        /* 로딩 표시 */
+        /* 로딩 메시지 */
         .loading-msg {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #666; font-size: 0.9rem; pointer-events: none;
+            color: #666; font-size: 1rem; z-index: 10;
         }
 
+        /* 범례 */
+        .legend { position: absolute; top: 10px; left: 10px; z-index: 5; font-size: 11px; font-family: 'Roboto'; pointer-events: none; }
+        .legend-item { margin-right: 8px; font-weight: bold; }
+        
     </style>
 </head>
 <body>
 
     <header>
         <div class="logo"><i class="fas fa-paw"></i> ZeroTiger</div>
-        <div style="font-size:0.8rem; color:#666;">Original Chart</div>
+        <div style="font-size:0.8rem; color:#666;">Original Engine</div>
     </header>
 
     <div class="ticker-bar">
@@ -152,72 +132,219 @@
         </div>
     </div>
 
-    <div class="chart-wrapper">
-        <div id="loading" class="loading-msg">Connecting to Binance...</div>
-        <div class="chart-legend" id="legend">
-            <span class="legend-item" style="color:#ffa500">EMA(20)</span>
-            <span class="legend-item" style="color:#00ff00">EMA(60)</span>
-            <span class="legend-item" style="color:#ff0000">EMA(120)</span>
-            <span class="legend-item" style="color:#0000ff">EMA(200)</span>
+    <div class="chart-layout">
+        <div id="loading" class="loading-msg">Initializing Chart...</div>
+        
+        <div id="chart-area">
+            <div class="legend">
+                <span class="legend-item" style="color:#ffa500">EMA(20)</span>
+                <span class="legend-item" style="color:#00ff00">EMA(60)</span>
+                <span class="legend-item" style="color:#ff0000">EMA(120)</span>
+                <span class="legend-item" style="color:#0088ff">EMA(200)</span>
+            </div>
         </div>
-        <div id="chart"></div>
+        
+        <div id="rsi-area">
+            <div class="legend" style="top:5px;">
+                <span class="legend-item" style="color:#9e55ff">RSI(14)</span>
+            </div>
+        </div>
     </div>
 
     <script>
-        // --- 1. 차트 라이브러리 설정 (Lightweight Charts) ---
-        const chartContainer = document.getElementById('chart');
-        const chart = LightweightCharts.createChart(chartContainer, {
-            layout: {
-                background: { type: 'solid', color: '#0b0e11' }, // 바이낸스 배경색
-                textColor: '#848e9c',
-            },
-            grid: {
-                vertLines: { color: '#1e2329' }, // 그리드 색상
-                horzLines: { color: '#1e2329' },
-            },
-            crosshair: {
-                mode: LightweightCharts.CrosshairMode.Normal,
-            },
-            rightPriceScale: {
-                borderColor: '#252930',
-            },
-            timeScale: {
-                borderColor: '#252930',
-                timeVisible: true,
-            },
+        // --- 1. 차트 초기화 (Lightweight Charts) ---
+        const chartProps = {
+            layout: { background: { color: '#0b0e11' }, textColor: '#848e9c' },
+            grid: { vertLines: { color: '#1e2329' }, horzLines: { color: '#1e2329' } },
+            timeScale: { timeVisible: true, borderColor: '#252930' },
+            crosshair: { mode: 1 }, // Normal Mode
+        };
+
+        // 메인 차트 생성
+        const mainChart = LightweightCharts.createChart(document.getElementById('chart-area'), {
+            ...chartProps,
+            rightPriceScale: { borderColor: '#252930' }
         });
 
-        // 1-1. 캔들 시리즈 추가
-        const candleSeries = chart.addCandlestickSeries({
-            upColor: '#0ecb81',         // 상승: 초록
-            downColor: '#f6465d',       // 하락: 빨강
-            borderUpColor: '#0ecb81',
-            borderDownColor: '#f6465d',
-            wickUpColor: '#0ecb81',
-            wickDownColor: '#f6465d',
+        // RSI 차트 생성
+        const rsiChart = LightweightCharts.createChart(document.getElementById('rsi-area'), {
+            ...chartProps,
+            rightPriceScale: { borderColor: '#252930' },
+            timeScale: { visible: false } // 아래쪽 RSI는 시간축 숨김 (메인과 동기화 예정)
         });
 
-        // 1-2. 거래량 시리즈 추가 (차트 하단)
-        const volumeSeries = chart.addHistogramSeries({
-            color: '#26a69a',
-            priceFormat: { type: 'volume' },
-            priceScaleId: '', // 메인 차트와 겹치게 설정
-        });
-        
-        // 거래량을 아래쪽에 배치하기 위한 설정
-        chart.priceScale('').applyOptions({
-            scaleMargins: { top: 0.8, bottom: 0 },
+        // 메인 시리즈 (캔들)
+        const candleSeries = mainChart.addCandlestickSeries({
+            upColor: '#0ecb81', downColor: '#f6465d',
+            borderUpColor: '#0ecb81', borderDownColor: '#f6465d',
+            wickUpColor: '#0ecb81', wickDownColor: '#f6465d',
         });
 
-        // 1-3. 지표 시리즈 추가 (EMA 20, 60, 120, 200)
-        // 요청하신 색상: 주황, 초록, 빨강, 파랑
-        const ema20 = chart.addLineSeries({ color: '#ffa500', lineWidth: 1, priceScaleId: 'right' });
-        const ema60 = chart.addLineSeries({ color: '#00ff00', lineWidth: 1, priceScaleId: 'right' });
-        const ema120 = chart.addLineSeries({ color: '#ff0000', lineWidth: 1, priceScaleId: 'right' });
-        const ema200 = chart.addLineSeries({ color: '#0000ff', lineWidth: 1, priceScaleId: 'right' });
+        // 지표 시리즈 (EMA)
+        const ema20 = mainChart.addLineSeries({ color: '#ffa500', lineWidth: 1, priceScaleId: 'right' });
+        const ema60 = mainChart.addLineSeries({ color: '#00ff00', lineWidth: 1, priceScaleId: 'right' });
+        const ema120 = mainChart.addLineSeries({ color: '#ff0000', lineWidth: 1, priceScaleId: 'right' });
+        const ema200 = mainChart.addLineSeries({ color: '#0088ff', lineWidth: 1, priceScaleId: 'right' });
+
+        // RSI 시리즈
+        const rsiSeries = rsiChart.addLineSeries({ color: '#9e55ff', lineWidth: 1 });
+        // RSI 기준선 (70, 30)
+        const rsiUpLine = rsiChart.addLineSeries({ color: '#555', lineWidth: 1, lineStyle: 2 });
+        const rsiDownLine = rsiChart.addLineSeries({ color: '#555', lineWidth: 1, lineStyle: 2 });
 
 
-        // --- 2. 데이터 관리 및 계산 ---
+        // 차트 동기화 (메인 차트 움직이면 RSI도 같이 움직임)
+        mainChart.timeScale().subscribeVisibleTimeRangeChange((range) => {
+            rsiChart.timeScale().setVisibleRange(range);
+        });
+
+        // 리사이즈 처리
+        window.addEventListener('resize', () => {
+            const w = document.body.clientWidth;
+            const h = document.body.clientHeight - 110; // 헤더값 뺌
+            mainChart.resize(w, h * 0.8);
+            rsiChart.resize(w, h * 0.2);
+        });
+        // 초기 사이즈 강제 적용
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+
+
+        // --- 2. 데이터 계산 함수 (EMA, RSI) ---
+        function calculateEMA(data, period) {
+            const result = [];
+            const k = 2 / (period + 1);
+            let ema = data[0].close;
+            for (let i = 0; i < data.length; i++) {
+                if(i < period - 1) {
+                    ema = data[i].close; // 초기값
+                    result.push({ time: data[i].time, value: NaN }); 
+                } else {
+                    ema = data[i].close * k + ema * (1 - k);
+                    result.push({ time: data[i].time, value: ema });
+                }
+            }
+            return result;
+        }
+
+        function calculateRSI(data, period = 14) {
+            let result = [];
+            let gains = 0, losses = 0;
+            
+            // 초기 평균 계산
+            for(let i = 1; i <= period; i++) {
+                let change = data[i].close - data[i-1].close;
+                if(change > 0) gains += change;
+                else losses -= change;
+            }
+            let avgGain = gains / period;
+            let avgLoss = losses / period;
+
+            for(let i = 0; i < data.length; i++) {
+                if(i <= period) {
+                    result.push({ time: data[i].time, value: NaN });
+                    continue;
+                }
+                
+                let change = data[i].close - data[i-1].close;
+                let gain = change > 0 ? change : 0;
+                let loss = change < 0 ? -change : 0;
+
+                avgGain = (avgGain * (period - 1) + gain) / period;
+                avgLoss = (avgLoss * (period - 1) + loss) / period;
+
+                let rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+                let rsi = 100 - (100 / (1 + rs));
+                
+                result.push({ time: data[i].time, value: rsi });
+            }
+            return result;
+        }
+
+        // --- 3. 데이터 로드 (프록시 사용) ---
+        let currentSymbolObj = null;
+        let currentType = 'spot';
+        let klineWS = null;
+        let tickerWS = null;
+
+        async function loadMarket(coin, type) {
+            document.getElementById('loading').style.display = 'block';
+            if (klineWS) klineWS.close();
+
+            const baseUrl = type === 'spot' 
+                ? 'https://api.binance.com/api/v3/klines' 
+                : 'https://fapi.binance.com/fapi/v1/klines';
+            
+            const proxyUrl = 'https://api.allorigins.win/raw?url='; // CORS 우회용 프록시
+            const url = `${proxyUrl}${encodeURIComponent(`${baseUrl}?symbol=${coin.s.toUpperCase()}&interval=1h&limit=500`)}`;
+
+            try {
+                const res = await fetch(url);
+                const rawData = await res.json();
+
+                if(!Array.isArray(rawData)) throw new Error("Data Error");
+
+                const data = rawData.map(d => ({
+                    time: d[0] / 1000,
+                    open: parseFloat(d[1]),
+                    high: parseFloat(d[2]),
+                    low: parseFloat(d[3]),
+                    close: parseFloat(d[4]),
+                }));
+
+                // 데이터 세팅
+                candleSeries.setData(data);
+                
+                // 지표 계산 및 세팅
+                ema20.setData(calculateEMA(data, 20));
+                ema60.setData(calculateEMA(data, 60));
+                ema120.setData(calculateEMA(data, 120));
+                ema200.setData(calculateEMA(data, 200));
+
+                const rsiData = calculateRSI(data);
+                rsiSeries.setData(rsiData);
+                
+                // RSI 기준선 (데이터 길이만큼 선 그리기)
+                const startT = data[0].time;
+                const endT = data[data.length-1].time;
+                // 단순히 상수선 대신, 라이브러리 특성상 데이터 포인트로 매핑하거나 CreatePriceLine 사용 (여기선 데이터로 처리)
+                // *Lightweight Charts에서 가로선은 CreatePriceLine이 편함
+                
+                rsiChart.applyOptions({
+                     rightPriceScale: {
+                         scaleMargins: { top: 0.1, bottom: 0.1 },
+                     }
+                });
+                
+                document.getElementById('loading').style.display = 'none';
+
+                // 실시간 소켓 연결
+                const wsBase = type === 'spot' ? 'wss://stream.binance.com:9443/ws' : 'wss://fstream.binance.com/ws';
+                klineWS = new WebSocket(`${wsBase}/${coin.s}@kline_1h`);
+                
+                klineWS.onmessage = (e) => {
+                    const msg = JSON.parse(e.data);
+                    const k = msg.k;
+                    const update = {
+                        time: k.t / 1000,
+                        open: parseFloat(k.o),
+                        high: parseFloat(k.h),
+                        low: parseFloat(k.l),
+                        close: parseFloat(k.c)
+                    };
+                    candleSeries.update(update);
+                    
+                    // (심화) 실시간 RSI, EMA 계산은 복잡하므로 
+                    // 여기서는 캔들 업데이트만 반영하고, 
+                    // 다음 캔들 로드 시 지표가 갱신되는 방식을 사용합니다.
+                };
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loading').innerText = "Data Load Failed (CORS/Proxy Error). Try Refresh.";
+            }
+        }
+
+        // --- UI 및 티커 (이전과 동일) ---
         const spotCoins = [
             { id: 'btc', s: 'btcusdt', n: 'BTC' }, { id: 'eth', s: 'ethusdt', n: 'ETH' },
             { id: 'xrp', s: 'xrpusdt', n: 'XRP' }, { id: 'sol', s: 'solusdt', n: 'SOL' },
@@ -229,152 +356,37 @@
             { id: 'pepe', s: '1000pepeusdt', n: '1000PEPE' }, { id: 'wif', s: 'wifusdt', n: 'WIF' }
         ];
 
-        let currentType = 'spot';
-        let currentCoin = spotCoins[0];
-        let klineWS = null; // 차트 데이터용 웹소켓
-        let tickerWS = null; // 상단바용 웹소켓
-
-        // EMA 계산 함수
-        function calculateEMA(data, period) {
-            const result = [];
-            const k = 2 / (period + 1);
-            let ema = data[0].close;
-            
-            for (let i = 0; i < data.length; i++) {
-                if(i < period - 1) {
-                    // 데이터 부족 시 대충 계산하거나 비움 (여기선 단순 이동)
-                    ema = data[i].close; 
-                    result.push({ time: data[i].time, value: NaN }); 
-                } else {
-                    const price = data[i].close;
-                    ema = price * k + ema * (1 - k);
-                    result.push({ time: data[i].time, value: ema });
-                }
-            }
-            return result;
-        }
-
-        // --- 3. 데이터 로드 (REST API + WebSocket) ---
-        async function loadMarket(coin, type) {
-            document.getElementById('loading').style.display = 'block';
-            
-            // 3-1. 기존 소켓 종료
-            if (klineWS) klineWS.close();
-
-            // 3-2. 과거 데이터 가져오기 (REST API)
-            // 현물: api.binance.com / 선물: fapi.binance.com
-            const baseUrl = type === 'spot' ? 'https://api.binance.com' : 'https://fapi.binance.com';
-            const interval = '1h'; // 기본 1시간봉
-            
-            try {
-                const res = await fetch(`${baseUrl}/api/v1/klines?symbol=${coin.s.toUpperCase()}&interval=${interval}&limit=500`);
-                const rawData = await res.json();
-
-                // 데이터 변환
-                const candleData = rawData.map(d => ({
-                    time: d[0] / 1000,
-                    open: parseFloat(d[1]),
-                    high: parseFloat(d[2]),
-                    low: parseFloat(d[3]),
-                    close: parseFloat(d[4]),
-                }));
-
-                const volumeData = rawData.map(d => ({
-                    time: d[0] / 1000,
-                    value: parseFloat(d[5]),
-                    color: parseFloat(d[4]) >= parseFloat(d[1]) ? 'rgba(14, 203, 129, 0.5)' : 'rgba(246, 70, 93, 0.5)'
-                }));
-
-                // 차트에 데이터 세팅
-                candleSeries.setData(candleData);
-                volumeSeries.setData(volumeData);
-
-                // EMA 계산 및 세팅
-                ema20.setData(calculateEMA(candleData, 20));
-                ema60.setData(calculateEMA(candleData, 60));
-                ema120.setData(calculateEMA(candleData, 120));
-                ema200.setData(calculateEMA(candleData, 200));
-
-                document.getElementById('loading').style.display = 'none';
-
-                // 3-3. 실시간 차트 업데이트 (WebSocket)
-                // 현물: stream.binance.com / 선물: fstream.binance.com
-                const wsBase = type === 'spot' ? 'wss://stream.binance.com:9443/ws' : 'wss://fstream.binance.com/ws';
-                klineWS = new WebSocket(`${wsBase}/${coin.s}@kline_${interval}`);
-
-                klineWS.onmessage = (event) => {
-                    const msg = JSON.parse(event.data);
-                    const k = msg.k;
-                    
-                    const updateData = {
-                        time: k.t / 1000,
-                        open: parseFloat(k.o),
-                        high: parseFloat(k.h),
-                        low: parseFloat(k.l),
-                        close: parseFloat(k.c),
-                    };
-
-                    candleSeries.update(updateData);
-                    
-                    // 거래량 업데이트
-                    volumeSeries.update({
-                        time: k.t / 1000,
-                        value: parseFloat(k.v),
-                        color: updateData.close >= updateData.open ? 'rgba(14, 203, 129, 0.5)' : 'rgba(246, 70, 93, 0.5)'
-                    });
-
-                    // (참고: EMA 실시간 업데이트는 복잡해서 여기서는 생략, 
-                    // 다음 캔들 확정 시 자동 갱신됨)
-                };
-
-            } catch (err) {
-                console.error(err);
-                document.getElementById('loading').innerText = "Data Load Error";
-            }
-        }
-
-        // --- 4. UI 로직 (드롭다운, 탭) ---
         function createList(type, coins, containerId) {
             const container = document.getElementById(containerId);
             container.innerHTML = "";
             coins.forEach(c => {
                 const item = document.createElement('div');
                 item.className = 'menu-item';
-                item.onclick = (e) => {
-                    e.stopPropagation();
-                    selectCoin(c, type);
-                };
-                item.innerHTML = `
-                    <div style="display:flex; flex-direction:column;">
-                        <span style="font-weight:bold;">${c.n}/USDT</span>
-                        <span style="font-size:0.75rem; color:#666;">${type.toUpperCase()}</span>
-                    </div>
-                `;
+                item.onclick = (e) => { e.stopPropagation(); selectCoin(c, type); };
+                item.innerHTML = `<div><span style="font-weight:bold;">${c.n}/USDT</span> <span style="font-size:0.75rem; color:#666;">${type.toUpperCase()}</span></div>`;
                 container.appendChild(item);
             });
         }
         createList('spot', spotCoins, 'list-spot');
         createList('future', futureCoins, 'list-future');
 
-        window.switchTab = function(event, type) {
-            event.stopPropagation();
+        window.switchTab = function(e, type) {
+            e.stopPropagation();
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
+            e.target.classList.add('active');
             document.getElementById('list-spot').classList.remove('active');
             document.getElementById('list-future').classList.remove('active');
             document.getElementById(`list-${type}`).classList.add('active');
         }
 
         function selectCoin(coin, type) {
-            currentCoin = coin;
+            currentSymbolObj = coin;
             currentType = type;
             document.getElementById('display-symbol').innerText = `${coin.n}/USDT`;
             const badge = document.getElementById('market-badge');
-            badge.innerText = type === 'spot' ? "SPOT" : "PERP";
-            badge.className = type === 'spot' ? "market-badge badge-spot" : "market-badge badge-future";
+            badge.innerText = type==='spot'?"SPOT":"PERP";
+            badge.className = type==='spot'?"market-badge badge-spot":"market-badge badge-future";
             document.getElementById('dropdown').classList.remove('show');
-            
-            // 차트 로드
             loadMarket(coin, type);
         }
 
@@ -386,42 +398,35 @@
         });
         dropdown.addEventListener('click', (e) => e.stopPropagation());
 
-        // --- 5. 상단 티커용 WebSocket (항상 켜둠) ---
+        // 상단 티커 소켓
         function startTickerWS() {
-            // 현물/선물 데이터 둘 다 가져오기 위해 2개 연결 (간단화)
-            // 여기서는 현재 선택된 타입에 따라 재연결하는 방식으로 구현
             const streams = spotCoins.map(c=>`${c.s}@ticker`).join('/');
             tickerWS = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
-            
             tickerWS.onmessage = (e) => {
                 const data = JSON.parse(e.data);
-                if(currentType === 'spot' && data.s.toLowerCase() === currentCoin.s) {
+                if(currentType === 'spot' && currentSymbolObj && data.s.toLowerCase() === currentSymbolObj.s) {
                     updateHeader(data);
                 }
             };
         }
-        
         function updateHeader(data) {
             const p = parseFloat(data.c);
             const P = parseFloat(data.P);
             const color = P >= 0 ? 'c-up' : 'c-down';
-            
             document.getElementById('display-price').innerText = p < 1 ? p.toFixed(5) : p.toLocaleString(undefined, {minimumFractionDigits:2});
             document.getElementById('display-price').className = `main-price ${color}`;
-            
             document.getElementById('display-change').innerText = (P>0?"+":"") + P.toFixed(2) + "%";
             document.getElementById('display-change').className = `stat-val ${color}`;
-            
             document.getElementById('display-high').innerText = parseFloat(data.h).toLocaleString();
             document.getElementById('display-low').innerText = parseFloat(data.l).toLocaleString();
         }
 
-        // 차트 리사이즈 대응
-        window.addEventListener('resize', () => {
-            chart.resize(document.querySelector('.chart-wrapper').clientWidth, document.querySelector('.chart-wrapper').clientHeight);
-        });
+        // RSI 기준선 (30, 70) 추가
+        const rsiLine70 = rsiChart.createPriceLine({ price: 70, color: '#888', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
+        const rsiLine30 = rsiChart.createPriceLine({ price: 30, color: '#888', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
 
-        // 초기 실행
+        // 실행
+        currentSymbolObj = spotCoins[0];
         startTickerWS();
         loadMarket(spotCoins[0], 'spot');
 
