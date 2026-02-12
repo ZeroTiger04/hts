@@ -654,6 +654,42 @@
         'mainSeriesProperties.prevClosePriceLineColor':        '#4e5a72',
       }
     });
+
+    tvWidget.onChartReady(() => {
+      const chart = tvWidget.chart();
+
+      /* ── EMA 20 주황 ── */
+      chart.createStudy('Moving Average Exponential', false, false,
+        { length: 20, source: 'close' },
+        { 'moving average exponential.ma.color': '#ff8c00', 'moving average exponential.ma.linewidth': 1 }
+      );
+      /* ── EMA 60 초록 ── */
+      chart.createStudy('Moving Average Exponential', false, false,
+        { length: 60, source: 'close' },
+        { 'moving average exponential.ma.color': '#00e87a', 'moving average exponential.ma.linewidth': 1 }
+      );
+      /* ── EMA 120 빨강 ── */
+      chart.createStudy('Moving Average Exponential', false, false,
+        { length: 120, source: 'close' },
+        { 'moving average exponential.ma.color': '#ff3a5c', 'moving average exponential.ma.linewidth': 1 }
+      );
+      /* ── EMA 200 파랑 ── */
+      chart.createStudy('Moving Average Exponential', false, false,
+        { length: 200, source: 'close' },
+        { 'moving average exponential.ma.color': '#4d9fff', 'moving average exponential.ma.linewidth': 2 }
+      );
+      /* ── RSI 골드 ── */
+      chart.createStudy('Relative Strength Index', false, false,
+        { length: 14, source: 'close' },
+        {
+          'relative strength index.plot.color':              '#c8a84b',
+          'relative strength index.plot.linewidth':          1,
+          'relative strength index.upper band.color':        '#1a2035',
+          'relative strength index.lower band.color':        '#1a2035',
+          'relative strength index.hlines background.color': '#c8a84b08',
+        }
+      );
+    });
   }
 
   /* ─── WebSocket ─── */
