@@ -3,269 +3,356 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-time HTS</title>
+    <title>Binance Clone</title>
     
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
+        /* 1. 바이낸스 공식 컬러 변수 정의 */
         :root {
-            --bg-color: #131722;
-            --panel-color: #1e222d;
-            --border-color: #2a2e39;
-            --text-color: #d1d4dc;
-            --up-color: #089981;       /* 초록 (상승) */
-            --down-color: #f23645;     /* 빨강 (하락) */
-            --flash-up: rgba(8, 153, 129, 0.4);
-            --flash-down: rgba(242, 54, 69, 0.4);
+            --bg-body: #0b0e11;       /* 전체 배경 (아주 어두움) */
+            --bg-card: #161a1e;       /* 카드/패널 배경 */
+            --bg-hover: #2b3139;      /* 마우스 올렸을 때 */
+            --border: #252930;        /* 테두리 선 */
+            
+            --text-primary: #eaecef;  /* 하얀 글씨 */
+            --text-secondary: #848e9c;/* 회색 글씨 */
+            --text-yellow: #fcd535;   /* 바이낸스 노랑 */
+            
+            --up: #0ecb81;            /* 바이낸스 그린 */
+            --down: #f6465d;          /* 바이낸스 레드 */
         }
+
+        * { box-sizing: border-box; }
 
         body {
             margin: 0; padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            font-family: "Binance Plex", Arial, sans-serif; /* 바이낸스 폰트 느낌 */
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
+        /* 스크롤바 커스텀 */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        /* --- 헤더 --- */
         header {
-            height: 40px;
-            background-color: var(--bg-color);
-            border-bottom: 1px solid var(--border-color);
+            height: 50px;
+            background-color: #181a20;
+            border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            padding: 0 15px;
-            font-weight: 700;
-            font-size: 0.9rem;
+            padding: 0 20px;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-yellow);
             letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .status-dot {
-            width: 8px; height: 8px;
-            background-color: #00ff00;
-            border-radius: 50%;
-            margin-right: 8px;
-            box-shadow: 0 0 8px #00ff00;
+        .nav-menu {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
         }
+        .nav-menu span:hover { color: var(--text-yellow); cursor: pointer; }
 
+        /* --- 메인 레이아웃 (Grid) --- */
         .main-container {
             display: flex;
             flex: 1;
-            height: calc(100vh - 40px);
+            height: calc(100vh - 50px);
         }
 
-        #tv_chart_container {
-            flex: 1;
-            border-right: 1px solid var(--border-color);
-        }
-
-        .watchlist {
-            width: 320px;
-            background-color: var(--bg-color);
+        /* 좌측: 차트 영역 (75%) */
+        .chart-section {
+            flex: 3;
             display: flex;
             flex-direction: column;
-            overflow-y: auto;
+            border-right: 1px solid var(--border);
         }
 
-        .watchlist-header {
-            padding: 10px 15px;
-            font-size: 0.8rem;
-            color: #787b86;
-            border-bottom: 1px solid var(--border-color);
+        /* 상단 정보 바 (Ticker Tape) */
+        .ticker-bar {
+            height: 60px;
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 30px;
+        }
+
+        .pair-title { font-size: 1.2rem; font-weight: bold; }
+        .pair-price { font-size: 1.2rem; font-weight: bold; color: var(--up); }
+        .stat-item { display: flex; flex-direction: column; font-size: 0.75rem; color: var(--text-secondary); }
+        .stat-val { font-size: 0.8rem; color: var(--text-primary); margin-top: 3px; }
+
+        /* 차트 컨테이너 */
+        #tv_chart_container {
+            flex: 1;
+            background-color: var(--bg-body);
+        }
+
+        /* 우측: 마켓 리스트 (25%) */
+        .market-section {
+            flex: 1;
+            background-color: var(--bg-card);
+            display: flex;
+            flex-direction: column;
+            min-width: 300px;
+        }
+
+        /* 마켓 리스트 헤더 */
+        .market-header {
+            padding: 15px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: bold;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
         }
 
-        .symbol-item {
+        /* 마켓 리스트 아이템 */
+        .market-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .market-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            padding: 12px 15px;
+            grid-template-columns: 1.2fr 1fr 1fr;
+            padding: 10px 15px;
+            font-size: 0.85rem;
             cursor: pointer;
-            border-bottom: 1px solid var(--border-color);
-            transition: background 0.1s;
+            align-items: center;
+            border-bottom: 1px solid transparent; /* 깜빡임 방지용 */
         }
 
-        .symbol-item:hover { background-color: #2a2e39; }
+        .market-row:hover { background-color: var(--bg-hover); }
 
-        /* 깜빡임 애니메이션 클래스 */
-        .flash-up { animation: flashGreen 0.5s ease-out; }
-        .flash-down { animation: flashRed 0.5s ease-out; }
-
-        @keyframes flashGreen {
-            0% { background-color: var(--flash-up); }
-            100% { background-color: transparent; }
-        }
-        @keyframes flashRed {
-            0% { background-color: var(--flash-down); }
-            100% { background-color: transparent; }
-        }
-
-        .ticker-name { font-weight: 600; font-size: 0.95rem; }
-        .ticker-sub { font-size: 0.75rem; color: #787b86; margin-top: 2px; }
+        .col-symbol { color: var(--text-primary); font-weight: bold; }
+        .col-symbol span { color: var(--text-secondary); font-size: 0.75rem; font-weight: normal;}
         
-        .price-box { text-align: right; }
-        .price-val { font-size: 0.95rem; font-family: 'Roboto Mono', monospace; font-weight: 500; }
-        .price-change { font-size: 0.8rem; margin-top: 4px; }
+        .col-price { text-align: right; font-family: 'Roboto', sans-serif; }
+        .col-change { text-align: right; }
 
-        .text-up { color: var(--up-color); }
-        .text-down { color: var(--down-color); }
+        /* 색상 유틸리티 */
+        .c-up { color: var(--up); }
+        .c-down { color: var(--down); }
+        
+        /* 주문 버튼 (장식용) */
+        .order-buttons {
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid var(--border);
+        }
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-buy { background-color: var(--up); }
+        .btn-sell { background-color: var(--down); }
 
-        /* 스크롤바 커스텀 */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-color); }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="status-dot"></div>
-        <span>BINANCE REAL-TIME FEED</span>
+        <div class="logo">
+            <i class="fas fa-cube"></i> BINANCE
+        </div>
+        <div class="nav-menu">
+            <span>Market</span>
+            <span>Trade</span>
+            <span>Derivatives</span>
+            <span>Finance</span>
+            <span style="color:var(--text-yellow)">Wallet</span>
+        </div>
     </header>
 
     <div class="main-container">
-        <div id="tv_chart_container"></div>
+        
+        <div class="chart-section">
+            <div class="ticker-bar">
+                <div class="pair-title" id="main-symbol">BTC/USDT</div>
+                <div class="pair-price c-up" id="main-price">0.00</div>
+                <div class="stat-item">
+                    <span>24h Change</span>
+                    <span class="stat-val" id="main-change">0.00%</span>
+                </div>
+                <div class="stat-item">
+                    <span>24h High</span>
+                    <span class="stat-val" id="main-high">0.00</span>
+                </div>
+                <div class="stat-item">
+                    <span>24h Low</span>
+                    <span class="stat-val" id="main-low">0.00</span>
+                </div>
+            </div>
 
-        <div class="watchlist" id="watchlist">
-            <div class="watchlist-header">
-                <span>SYMBOL</span>
-                <span>PRICE (USDT)</span>
+            <div id="tv_chart_container"></div>
+        </div>
+
+        <div class="market-section">
+            <div class="market-header">
+                <span>Pair</span>
+                <span style="text-align:right">Price</span>
+                <span style="text-align:right">Change</span>
             </div>
+            
+            <div class="market-list" id="market-list">
+                </div>
+
+            <div class="order-buttons">
+                <button class="btn btn-buy">Buy</button>
+                <button class="btn btn-sell">Sell</button>
             </div>
+        </div>
     </div>
 
     <script>
-        // 1. 관리할 코인 목록 정의
-        // symbol: 바이낸스 웹소켓용 (소문자), name: 표시 이름
+        // --- 설정 및 데이터 ---
         const coins = [
-            { symbol: 'btcusdt', name: 'Bitcoin', tv: 'BINANCE:BTCUSDT' },
-            { symbol: 'ethusdt', name: 'Ethereum', tv: 'BINANCE:ETHUSDT' },
-            { symbol: 'xrpusdt', name: 'Ripple', tv: 'BINANCE:XRPUSDT' },
-            { symbol: 'solusdt', name: 'Solana', tv: 'BINANCE:SOLUSDT' },
-            { symbol: 'dogeusdt', name: 'Dogecoin', tv: 'BINANCE:DOGEUSDT' },
-            { symbol: 'adausdt', name: 'Cardano', tv: 'BINANCE:ADAUSDT' },
-            { symbol: 'bnbusdt', name: 'BNB', tv: 'BINANCE:BNBUSDT' }
+            { s: 'btcusdt', n: 'BTC', tv: 'BINANCE:BTCUSDT' },
+            { s: 'ethusdt', n: 'ETH', tv: 'BINANCE:ETHUSDT' },
+            { s: 'xrpusdt', n: 'XRP', tv: 'BINANCE:XRPUSDT' },
+            { s: 'bnbusdt', n: 'BNB', tv: 'BINANCE:BNBUSDT' },
+            { s: 'solusdt', n: 'SOL', tv: 'BINANCE:SOLUSDT' },
+            { s: 'dogeusdt', n: 'DOGE', tv: 'BINANCE:DOGEUSDT' },
+            { s: 'adausdt', n: 'ADA', tv: 'BINANCE:ADAUSDT' },
+            { s: 'avaxusdt', n: 'AVAX', tv: 'BINANCE:AVAXUSDT' },
+            { s: 'dotusdt', n: 'DOT', tv: 'BINANCE:DOTUSDT' },
+            { s: 'shibusdt', n: 'SHIB', tv: 'BINANCE:SHIBUSDT' }
         ];
 
-        let currentTvSymbol = coins[0].tv;
+        let currentSymbol = coins[0]; // 현재 선택된 코인
         let tvWidget = null;
 
-        // 2. 초기화: HTML 리스트 만들기
-        const watchlistEl = document.getElementById('watchlist');
-        
-        coins.forEach(coin => {
-            const item = document.createElement('div');
-            item.className = 'symbol-item';
-            item.id = `row-${coin.symbol}`; // 나중에 찾기 위해 ID 부여
-            item.onclick = () => loadChart(coin.tv); // 클릭 시 차트 로드
+        // --- 1. 초기화: 마켓 리스트 만들기 ---
+        const listEl = document.getElementById('market-list');
 
-            item.innerHTML = `
-                <div>
-                    <div class="ticker-name">${coin.symbol.toUpperCase().replace('USDT','')}</div>
-                    <div class="ticker-sub">${coin.name}</div>
-                </div>
-                <div class="price-box">
-                    <div class="price-val" id="price-${coin.symbol}">Loading...</div>
-                    <div class="price-change" id="change-${coin.symbol}">0.00%</div>
-                </div>
+        coins.forEach(c => {
+            const row = document.createElement('div');
+            row.className = 'market-row';
+            row.id = `row-${c.s}`;
+            row.onclick = () => changePair(c); // 클릭 이벤트 연결
+
+            row.innerHTML = `
+                <div class="col-symbol">${c.n} <span>/USDT</span></div>
+                <div class="col-price" id="price-${c.s}">-</div>
+                <div class="col-change" id="change-${c.s}">0.00%</div>
             `;
-            watchlistEl.appendChild(item);
+            listEl.appendChild(row);
         });
 
-        // 3. 트레이딩뷰 차트 로드 함수
-        function loadChart(symbol) {
-            if(tvWidget) {
-                // 이미 위젯이 있으면 그냥 내용만 업데이트 (깜빡임 방지)
-                // *주의: 무료 위젯은 iframe reload 없이 심볼 변경이 까다로워 재생성 방식을 씁니다.
-                document.getElementById('tv_chart_container').innerHTML = ""; 
+        // --- 2. 차트 로드 함수 ---
+        function loadChart(tvSymbol) {
+            if(document.getElementById('tv_chart_container').innerHTML !== "") {
+                document.getElementById('tv_chart_container').innerHTML = "";
             }
-            
+
             tvWidget = new TradingView.widget({
                 "autosize": true,
-                "symbol": symbol,
+                "symbol": tvSymbol,
                 "interval": "D",
                 "timezone": "Asia/Seoul",
                 "theme": "dark",
                 "style": "1",
                 "locale": "kr",
+                "toolbar_bg": "#161a1e",
                 "enable_publishing": false,
                 "hide_side_toolbar": false,
+                "allow_symbol_change": false,
                 "container_id": "tv_chart_container",
-                "studies": ["RSI@tv-basicstudies"]
+                "overrides": {
+                    "paneProperties.background": "#161a1e",
+                    "paneProperties.vertGridProperties.color": "#2b3139",
+                    "paneProperties.horzGridProperties.color": "#2b3139",
+                    "scalesProperties.textColor" : "#848e9c"
+                }
             });
         }
 
-        // 4. [핵심] 웹소켓 연결 (Binance Stream)
-        // 여러 코인의 ticker 정보를 한 번에 구독하는 스트림 주소 생성
-        const streams = coins.map(c => `${c.symbol}@ticker`).join('/');
-        const wsUrl = `wss://stream.binance.com:9443/ws/${streams}`;
-        
-        const socket = new WebSocket(wsUrl);
+        // --- 3. 코인 변경 기능 ---
+        function changePair(coinObj) {
+            currentSymbol = coinObj;
+            
+            // 상단 정보바 업데이트
+            document.getElementById('main-symbol').innerText = `${coinObj.n}/USDT`;
+            
+            // 차트 다시 그리기
+            loadChart(coinObj.tv);
+        }
 
-        socket.onopen = () => {
-            console.log("실시간 데이터 연결 성공!");
-        };
+        // --- 4. 웹소켓 실시간 데이터 연결 (Binance) ---
+        const streams = coins.map(c => `${c.s}@ticker`).join('/');
+        const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
 
-        socket.onmessage = (event) => {
+        ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            const symbol = data.s.toLowerCase(); // btcusdt
-            const price = parseFloat(data.c);    // 현재가 (Close price)
-            const prevPrice = parseFloat(data.o); // 24시간 전 가격 (Open price) - *ticker 스트림 기준 시가
-            const percent = parseFloat(data.P);  // 24시간 변동률
+            const symbol = data.s.toLowerCase();
+            const price = parseFloat(data.c);
+            const percent = parseFloat(data.P);
+            const high = parseFloat(data.h);
+            const low = parseFloat(data.l);
 
-            updateRow(symbol, price, percent);
-        };
-
-        // 5. 화면 업데이트 및 번쩍임 효과 (Flash)
-        // 이전 가격을 기억해서 색상을 비교하기 위한 객체
-        const prevPrices = {};
-
-        function updateRow(symbol, price, percent) {
-            const rowEl = document.getElementById(`row-${symbol}`);
+            // (1) 리스트 업데이트
             const priceEl = document.getElementById(`price-${symbol}`);
             const changeEl = document.getElementById(`change-${symbol}`);
             
-            if(!rowEl) return;
-
-            // 가격 포맷팅 (달러 표시)
-            // 1달러 미만이면 소수점 4자리, 이상이면 2자리
-            const formattedPrice = price < 1 
-                ? price.toFixed(4) 
-                : price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-
-            priceEl.innerText = formattedPrice;
-
-            // 등락률 표시
-            const isUp = percent >= 0;
-            changeEl.innerText = (isUp ? "+" : "") + percent.toFixed(2) + "%";
-            changeEl.className = `price-change ${isUp ? 'text-up' : 'text-down'}`;
-            priceEl.className = `price-val ${isUp ? 'text-up' : 'text-down'}`;
-
-            // 깜빡임 효과 (이전 가격과 비교하여 상승/하락 감지)
-            const oldPrice = prevPrices[symbol];
-            
-            if (oldPrice && oldPrice !== price) {
-                // 기존 클래스 제거 (애니메이션 리셋을 위해)
-                rowEl.classList.remove('flash-up', 'flash-down');
+            if(priceEl) {
+                // 가격 포맷 (1달러 미만이면 소수점 4자리)
+                const priceStr = price < 1 ? price.toFixed(4) : price.toLocaleString(undefined, {minimumFractionDigits: 2});
                 
-                // 브라우저가 클래스 제거를 인식하도록 아주 잠깐 대기 후 추가
-                void rowEl.offsetWidth; 
-
-                if (price > oldPrice) {
-                    rowEl.classList.add('flash-up');
-                } else {
-                    rowEl.classList.add('flash-down');
-                }
+                priceEl.innerText = priceStr;
+                changeEl.innerText = (percent > 0 ? "+" : "") + percent.toFixed(2) + "%";
+                
+                // 색상 변경
+                const colorClass = percent >= 0 ? 'c-up' : 'c-down';
+                priceEl.className = `col-price ${colorClass}`;
+                changeEl.className = `col-change ${colorClass}`;
             }
-            
-            // 현재 가격 저장
-            prevPrices[symbol] = price;
-        }
 
-        // 초기 차트 로드
-        loadChart(coins[0].tv);
+            // (2) 메인 상단바 업데이트 (현재 보고 있는 코인일 경우만)
+            if(symbol === currentSymbol.s) {
+                document.getElementById('main-price').innerText = price < 1 ? price.toFixed(4) : price.toLocaleString();
+                
+                const mainChange = document.getElementById('main-change');
+                mainChange.innerText = (percent > 0 ? "+" : "") + percent.toFixed(2) + "%";
+                mainChange.className = `stat-val ${percent >= 0 ? 'c-up' : 'c-down'}`;
+                
+                // 메인 가격 색상도 실시간 변경
+                document.getElementById('main-price').className = `pair-price ${percent >= 0 ? 'c-up' : 'c-down'}`;
+
+                document.getElementById('main-high').innerText = high < 1 ? high.toFixed(4) : high.toLocaleString();
+                document.getElementById('main-low').innerText = low < 1 ? low.toFixed(4) : low.toLocaleString();
+            }
+        };
+
+        // 초기 실행
+        changePair(coins[0]); // 첫 번째 코인(BTC)으로 시작
 
     </script>
 </body>
