@@ -143,16 +143,15 @@
   .sym-icon {
     width: 28px; height: 28px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), #7b611a);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: .55rem;
-    font-weight: 700;
-    letter-spacing: .04em;
-    color: #000;
+    overflow: hidden;
     flex-shrink: 0;
     transition: transform .2s;
+    background: var(--bg-hover);
+  }
+  .sym-icon img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
   }
   .symbol-selector:hover .sym-icon { transform: scale(1.1); }
 
@@ -231,13 +230,14 @@
   .item-coin-icon {
     width: 24px; height: 24px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: .5rem;
-    font-weight: 700;
-    color: #000;
+    overflow: hidden;
     flex-shrink: 0;
+    background: var(--bg-hover);
+  }
+  .item-coin-icon img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
   }
   .item-texts { display: flex; flex-direction: column; }
   .item-sym {
@@ -369,17 +369,7 @@
   }
   #tv_chart_container { width: 100%; height: 100%; }
 
-  /* ══════════════════════════════
-     COIN COLORS
-  ══════════════════════════════ */
-  .coin-btc  { background: linear-gradient(135deg,#f7931a,#9e5c0d); }
-  .coin-eth  { background: linear-gradient(135deg,#627eea,#3a4e9e); }
-  .coin-xrp  { background: linear-gradient(135deg,#00aae4,#006a8e); }
-  .coin-sol  { background: linear-gradient(135deg,#9945ff,#14f195); }
-  .coin-bnb  { background: linear-gradient(135deg,#f3ba2f,#9c7913); }
-  .coin-doge { background: linear-gradient(135deg,#c2a633,#7a6618); }
-  .coin-ada  { background: linear-gradient(135deg,#0033ad,#002270); }
-  .coin-pepe { background: linear-gradient(135deg,#4caf50,#2e7d32); }
+
 </style>
 </head>
 <body>
@@ -399,7 +389,7 @@
     <!-- Symbol selector -->
     <div class="symbol-selector" id="symbol-btn">
       <div class="current-symbol">
-        <div class="sym-icon" id="sym-icon">BTC</div>
+        <div class="sym-icon" id="sym-icon"><img src="https://assets.coingecko.com/coins/images/1/small/bitcoin.png" alt="BTC"></div>
         <div class="sym-texts">
           <div class="sym-pair" id="display-symbol">BTC / USDT</div>
           <div class="sym-label">PERPETUAL</div>
@@ -467,14 +457,14 @@
 <script>
   /* ─── Coin definitions ─── */
   const coins = [
-    { id:'btc',  s:'btcusdt',  n:'BTC',  name:'Bitcoin',  tv:'BINANCE:BTCUSDT',  cls:'coin-btc'  },
-    { id:'eth',  s:'ethusdt',  n:'ETH',  name:'Ethereum', tv:'BINANCE:ETHUSDT',  cls:'coin-eth'  },
-    { id:'xrp',  s:'xrpusdt',  n:'XRP',  name:'Ripple',   tv:'BINANCE:XRPUSDT',  cls:'coin-xrp'  },
-    { id:'sol',  s:'solusdt',  n:'SOL',  name:'Solana',   tv:'BINANCE:SOLUSDT',  cls:'coin-sol'  },
-    { id:'bnb',  s:'bnbusdt',  n:'BNB',  name:'BNB',      tv:'BINANCE:BNBUSDT',  cls:'coin-bnb'  },
-    { id:'doge', s:'dogeusdt', n:'DOGE', name:'Dogecoin', tv:'BINANCE:DOGEUSDT', cls:'coin-doge' },
-    { id:'ada',  s:'adausdt',  n:'ADA',  name:'Cardano',  tv:'BINANCE:ADAUSDT',  cls:'coin-ada'  },
-    { id:'pepe', s:'pepeusdt', n:'PEPE', name:'Pepe',     tv:'BINANCE:PEPEUSDT', cls:'coin-pepe' },
+    { id:'btc',  s:'btcusdt',  n:'BTC',  name:'Bitcoin',  tv:'BINANCE:BTCUSDT',  logo:'https://assets.coingecko.com/coins/images/1/small/bitcoin.png' },
+    { id:'eth',  s:'ethusdt',  n:'ETH',  name:'Ethereum', tv:'BINANCE:ETHUSDT',  logo:'https://assets.coingecko.com/coins/images/279/small/ethereum.png' },
+    { id:'xrp',  s:'xrpusdt',  n:'XRP',  name:'Ripple',   tv:'BINANCE:XRPUSDT',  logo:'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png' },
+    { id:'sol',  s:'solusdt',  n:'SOL',  name:'Solana',   tv:'BINANCE:SOLUSDT',  logo:'https://assets.coingecko.com/coins/images/4128/small/solana.png' },
+    { id:'bnb',  s:'bnbusdt',  n:'BNB',  name:'BNB',      tv:'BINANCE:BNBUSDT',  logo:'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png' },
+    { id:'doge', s:'dogeusdt', n:'DOGE', name:'Dogecoin', tv:'BINANCE:DOGEUSDT', logo:'https://assets.coingecko.com/coins/images/5/small/dogecoin.png' },
+    { id:'ada',  s:'adausdt',  n:'ADA',  name:'Cardano',  tv:'BINANCE:ADAUSDT',  logo:'https://assets.coingecko.com/coins/images/975/small/cardano.png' },
+    { id:'pepe', s:'pepeusdt', n:'PEPE', name:'Pepe',     tv:'BINANCE:PEPEUSDT', logo:'https://assets.coingecko.com/coins/images/29850/small/pepe-token.jpeg' },
   ];
 
   let currentCoin     = coins[0];
@@ -506,7 +496,7 @@
     item.onclick = (e) => { e.stopPropagation(); selectCoin(c); };
     item.innerHTML = `
       <div class="item-left">
-        <div class="item-coin-icon ${c.cls}">${c.n.slice(0,3)}</div>
+        <div class="item-coin-icon"><img src="${c.logo}" alt="${c.n}"></div>
         <div class="item-texts">
           <div class="item-sym">${c.n} / USDT</div>
           <div class="item-name">${c.name}</div>
@@ -537,8 +527,7 @@
     currentCoin = coin;
     document.getElementById('display-symbol').textContent = `${coin.n} / USDT`;
     const icon = document.getElementById('sym-icon');
-    icon.textContent = coin.n.slice(0,3);
-    icon.className = `sym-icon ${coin.cls}`;
+    icon.innerHTML = `<img src="${coin.logo}" alt="${coin.n}">`;
     loadChart(coin.tv, currentInterval);
     dropdownEl.classList.remove('show');
     symbolBtn.classList.remove('open');
