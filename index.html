@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZeroTiger Final</title>
+    <title>ZeroTiger Stable</title>
     
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -74,10 +74,10 @@
         .stat-val { font-size: 0.8rem; color: var(--text-primary); margin-top: 3px; }
         .c-up { color: var(--up); } .c-down { color: var(--down); }
 
-        /* 차트 레이아웃 */
+        /* 차트 레이아웃 (반응형) */
         .chart-layout { flex: 1; display: flex; flex-direction: column; background-color: var(--bg-body); position: relative; }
-        #chart-area { flex: 4; width: 100%; position: relative; }
-        #rsi-area { flex: 1; width: 100%; border-top: 1px solid var(--border); position: relative; }
+        #chart-area { flex: 4; width: 100%; position: relative; } /* 메인 (80%) */
+        #rsi-area { flex: 1; width: 100%; border-top: 1px solid var(--border); position: relative; } /* RSI (20%) */
 
         .loading-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #666; font-size: 1rem; z-index: 10; }
         .legend { position: absolute; top: 10px; left: 10px; z-index: 5; font-size: 11px; font-family: 'Roboto'; pointer-events: none; }
@@ -89,7 +89,7 @@
 
     <header>
         <div class="logo"><i class="fas fa-paw"></i> ZeroTiger</div>
-        <div style="font-size:0.8rem; color:#666;">Original Engine</div>
+        <div style="font-size:0.8rem; color:#666;">Stable Engine</div>
     </header>
 
     <div class="ticker-bar">
@@ -108,10 +108,11 @@
                 <div id="list-future" class="coin-list-container"></div>
             </div>
         </div>
+
         <div style="display:flex; align-items:center; gap:20px;">
             <div class="main-price" id="display-price">0.00</div>
             <div class="stat-group">
-                <div class="stat-box"><span>Change</span><span class="stat-val" id="display-change">0.00%</span></div>
+                <div class="stat-box"><span>Open</span><span class="stat-val" id="display-open">0.00</span></div>
                 <div class="stat-box"><span>High</span><span class="stat-val" id="display-high">0.00</span></div>
                 <div class="stat-box"><span>Low</span><span class="stat-val" id="display-low">0.00</span></div>
             </div>
@@ -119,7 +120,8 @@
     </div>
 
     <div class="chart-layout">
-        <div id="loading" class="loading-msg">Loading Data...</div>
+        <div id="loading" class="loading-msg">Connecting to Stable Server...</div>
+        
         <div id="chart-area">
             <div class="legend">
                 <span class="legend-item" style="color:#ffa500">EMA(20)</span>
@@ -128,6 +130,7 @@
                 <span class="legend-item" style="color:#0088ff">EMA(200)</span>
             </div>
         </div>
+        
         <div id="rsi-area">
             <div class="legend" style="top:5px;">
                 <span class="legend-item" style="color:#9e55ff">RSI(14)</span>
@@ -136,7 +139,7 @@
     </div>
 
     <script>
-        // --- 차트 설정 ---
+        // --- 1. 차트 엔진 초기화 (Lightweight Charts) ---
         const chartProps = {
             layout: { background: { color: '#0b0e11' }, textColor: '#848e9c' },
             grid: { vertLines: { color: '#1e2329' }, horzLines: { color: '#1e2329' } },
@@ -145,7 +148,7 @@
         };
 
         const mainChart = LightweightCharts.createChart(document.getElementById('chart-area'), {
-            ...chartProps, rightPriceScale: { borderColor: '#252930' }
+            ...chartProps, rightPriceScale: { borderColor: '#252930', scaleMargins: { top: 0.1, bottom: 0.1 } }
         });
         const rsiChart = LightweightCharts.createChart(document.getElementById('rsi-area'), {
             ...chartProps, rightPriceScale: { borderColor: '#252930' }, timeScale: { visible: false }
@@ -157,14 +160,16 @@
             wickUpColor: '#0ecb81', wickDownColor: '#f6465d',
         });
 
+        // 지표 시리즈 (EMA 4개)
         const ema20 = mainChart.addLineSeries({ color: '#ffa500', lineWidth: 1, priceScaleId: 'right' });
         const ema60 = mainChart.addLineSeries({ color: '#00ff00', lineWidth: 1, priceScaleId: 'right' });
         const ema120 = mainChart.addLineSeries({ color: '#ff0000', lineWidth: 1, priceScaleId: 'right' });
         const ema200 = mainChart.addLineSeries({ color: '#0088ff', lineWidth: 1, priceScaleId: 'right' });
         
+        // RSI 시리즈
         const rsiSeries = rsiChart.addLineSeries({ color: '#9e55ff', lineWidth: 1 });
-        const rsiLine70 = rsiChart.createPriceLine({ price: 70, color: '#888', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
-        const rsiLine30 = rsiChart.createPriceLine({ price: 30, color: '#888', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
+        rsiChart.createPriceLine({ price: 70, color: '#888', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
+        rsiChart.createPriceLine({ price: 30, color: '#888', lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
 
         mainChart.timeScale().subscribeVisibleTimeRangeChange((range) => { rsiChart.timeScale().setVisibleRange(range); });
         
@@ -176,7 +181,7 @@
         });
         setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
 
-        // --- 계산 함수 ---
+        // --- 2. 계산 함수 ---
         function calculateEMA(data, period) {
             const result = [];
             const k = 2 / (period + 1);
@@ -212,36 +217,48 @@
             return result;
         }
 
-        // --- 데이터 로드 (핵심 수정: CryptoCompare API 사용) ---
-        let currentSymbolObj = null;
+        // --- 3. 데이터 로드 (Kraken API 사용 - 안정성 최우선) ---
+        // Kraken Symbol Mapping (BTC -> XXBTZUSD)
+        const krakenMap = {
+            'btc': 'XXBTZUSD',
+            'eth': 'XETHZUSD',
+            'xrp': 'XXRPZUSD',
+            'sol': 'SOLUSD',
+            'doge': 'XDGUSD',
+            'ada': 'ADAUSD'
+        };
+
+        let currentSymbolKey = 'btc';
         let currentType = 'spot';
-        let klineWS = null;
-        let tickerWS = null;
+        let updateInterval = null;
 
-        async function loadMarket(coin, type) {
+        async function loadMarket(key, type) {
             document.getElementById('loading').style.display = 'block';
-            if (klineWS) klineWS.close();
+            if(updateInterval) clearInterval(updateInterval);
 
-            // [핵심] 차단되지 않는 공용 API 사용
-            // CryptoCompare는 CORS를 허용하므로 브라우저에서 바로 호출 가능
-            const symbolMap = coin.n; // BTC, ETH ...
-            const url = `https://min-api.cryptocompare.com/data/v2/histohour?fsym=${symbolMap}&tsym=USDT&limit=500`;
+            // 1. 과거 데이터 (REST API)
+            const kSymbol = krakenMap[key];
+            const url = `https://api.kraken.com/0/public/OHLC?pair=${kSymbol}&interval=60`; // 1시간봉
 
             try {
                 const res = await fetch(url);
                 const json = await res.json();
+                
+                if(json.error && json.error.length > 0) throw new Error(json.error);
 
-                if(json.Response !== 'Success') throw new Error("API Error");
+                // Kraken returns object keys dynamically, find the array
+                const pairKey = Object.keys(json.result).find(k => k !== 'last');
+                const rawData = json.result[pairKey];
 
-                const data = json.Data.Data.map(d => ({
-                    time: d.time, // Unix Timestamp (Seconds)
-                    open: d.open,
-                    high: d.high,
-                    low: d.low,
-                    close: d.close,
+                const data = rawData.map(d => ({
+                    time: d[0], // Kraken uses Seconds already
+                    open: parseFloat(d[1]),
+                    high: parseFloat(d[2]),
+                    low: parseFloat(d[3]),
+                    close: parseFloat(d[4]),
                 }));
 
-                // 데이터 세팅
+                // 차트 그리기
                 candleSeries.setData(data);
                 ema20.setData(calculateEMA(data, 20));
                 ema60.setData(calculateEMA(data, 60));
@@ -251,56 +268,60 @@
 
                 document.getElementById('loading').style.display = 'none';
 
-                // 실시간 데이터는 바이낸스 소켓 연결 (CORS 문제 없음)
-                const wsBase = type === 'spot' ? 'wss://stream.binance.com:9443/ws' : 'wss://fstream.binance.com/ws';
-                // 바이낸스 심볼명 (소문자)
-                klineWS = new WebSocket(`${wsBase}/${coin.s}@kline_1h`);
-                
-                klineWS.onmessage = (e) => {
-                    const msg = JSON.parse(e.data);
-                    const k = msg.k;
-                    const update = {
-                        time: k.t / 1000,
-                        open: parseFloat(k.o),
-                        high: parseFloat(k.h),
-                        low: parseFloat(k.l),
-                        close: parseFloat(k.c)
-                    };
-                    // 실시간 캔들 업데이트
-                    candleSeries.update(update);
-                };
+                // 헤더 업데이트 (최신 캔들 기준)
+                const last = data[data.length - 1];
+                updateHeader(last.close, last.open, last.high, last.low);
+
+                // 2. 실시간 업데이트 (Polling 방식 - 가장 안정적)
+                // WebSocket 대신 5초마다 API를 호출하여 최신 꼬리를 업데이트
+                // (이 방식이 Client-only 환경에서 끊김 없이 가장 확실함)
+                updateInterval = setInterval(async () => {
+                    try {
+                        const updateRes = await fetch(url + `&since=${data[data.length-2].time}`); 
+                        const updateJson = await updateRes.json();
+                        const updateData = updateJson.result[pairKey];
+                        
+                        if(updateData && updateData.length > 0) {
+                            const latest = updateData[updateData.length - 1];
+                            const candle = {
+                                time: latest[0],
+                                open: parseFloat(latest[1]),
+                                high: parseFloat(latest[2]),
+                                low: parseFloat(latest[3]),
+                                close: parseFloat(latest[4])
+                            };
+                            candleSeries.update(candle);
+                            updateHeader(candle.close, candle.open, candle.high, candle.low);
+                        }
+                    } catch(e) { console.log("Update skip"); }
+                }, 5000); // 5초마다 갱신
 
             } catch (error) {
                 console.error(error);
-                document.getElementById('loading').innerText = "Load Failed. Please refresh.";
+                document.getElementById('loading').innerText = "Data Error. Try Refresh.";
             }
         }
 
-        // --- UI / Ticker ---
-        const spotCoins = [
-            { id: 'btc', s: 'btcusdt', n: 'BTC' }, { id: 'eth', s: 'ethusdt', n: 'ETH' },
-            { id: 'xrp', s: 'xrpusdt', n: 'XRP' }, { id: 'sol', s: 'solusdt', n: 'SOL' },
-            { id: 'bnb', s: 'bnbusdt', n: 'BNB' }, { id: 'doge', s: 'dogeusdt', n: 'DOGE' }
-        ];
-        const futureCoins = [
-            { id: 'btc', s: 'btcusdt', n: 'BTC' }, { id: 'eth', s: 'ethusdt', n: 'ETH' },
-            { id: 'xrp', s: 'xrpusdt', n: 'XRP' }, { id: 'sol', s: 'solusdt', n: 'SOL' },
-            { id: 'pepe', s: '1000pepeusdt', n: '1000PEPE' }, { id: 'wif', s: 'wifusdt', n: 'WIF' }
+        // --- UI Logic ---
+        const coins = [
+            { id: 'btc', n: 'BTC' }, { id: 'eth', n: 'ETH' },
+            { id: 'xrp', n: 'XRP' }, { id: 'sol', n: 'SOL' },
+            { id: 'doge', n: 'DOGE' }, { id: 'ada', n: 'ADA' }
         ];
 
-        function createList(type, coins, containerId) {
+        function createList(type, containerId) {
             const container = document.getElementById(containerId);
             container.innerHTML = "";
             coins.forEach(c => {
                 const item = document.createElement('div');
                 item.className = 'menu-item';
-                item.onclick = (e) => { e.stopPropagation(); selectCoin(c, type); };
+                item.onclick = (e) => { e.stopPropagation(); selectCoin(c.id, c.n, type); };
                 item.innerHTML = `<div><span style="font-weight:bold;">${c.n}/USDT</span> <span style="font-size:0.75rem; color:#666;">${type.toUpperCase()}</span></div>`;
                 container.appendChild(item);
             });
         }
-        createList('spot', spotCoins, 'list-spot');
-        createList('future', futureCoins, 'list-future');
+        createList('spot', 'list-spot');
+        createList('future', 'list-future');
 
         window.switchTab = function(e, type) {
             e.stopPropagation();
@@ -311,17 +332,33 @@
             document.getElementById(`list-${type}`).classList.add('active');
         }
 
-        function selectCoin(coin, type) {
-            currentSymbolObj = coin;
+        function selectCoin(id, name, type) {
+            currentSymbolKey = id;
             currentType = type;
-            document.getElementById('display-symbol').innerText = `${coin.n}/USDT`;
+            document.getElementById('display-symbol').innerText = `${name}/USDT`;
             const badge = document.getElementById('market-badge');
             badge.innerText = type==='spot'?"SPOT":"PERP";
             badge.className = type==='spot'?"market-badge badge-spot":"market-badge badge-future";
             document.getElementById('dropdown').classList.remove('show');
-            loadMarket(coin, type);
+            loadMarket(id, type);
         }
 
+        function updateHeader(price, open, high, low) {
+            const p = parseFloat(price);
+            const o = parseFloat(open);
+            const change = ((p - o) / o) * 100;
+            const color = change >= 0 ? 'c-up' : 'c-down';
+            
+            document.getElementById('display-price').innerText = p.toLocaleString(undefined, {minimumFractionDigits:2});
+            document.getElementById('display-price').className = `main-price ${color}`;
+            
+            // 상단바 정보 변경 (Change 대신 High/Low 등으로 활용 가능)
+            document.getElementById('display-open').innerText = o.toLocaleString();
+            document.getElementById('display-high').innerText = parseFloat(high).toLocaleString();
+            document.getElementById('display-low').innerText = parseFloat(low).toLocaleString();
+        }
+
+        // 드롭다운 이벤트
         const btn = document.getElementById('symbol-btn');
         const dropdown = document.getElementById('dropdown');
         btn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); });
@@ -330,32 +367,8 @@
         });
         dropdown.addEventListener('click', (e) => e.stopPropagation());
 
-        function startTickerWS() {
-            const streams = spotCoins.map(c=>`${c.s}@ticker`).join('/');
-            tickerWS = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
-            tickerWS.onmessage = (e) => {
-                const data = JSON.parse(e.data);
-                if(currentType === 'spot' && currentSymbolObj && data.s.toLowerCase() === currentSymbolObj.s) {
-                    updateHeader(data);
-                }
-            };
-        }
-        function updateHeader(data) {
-            const p = parseFloat(data.c);
-            const P = parseFloat(data.P);
-            const color = P >= 0 ? 'c-up' : 'c-down';
-            document.getElementById('display-price').innerText = p < 1 ? p.toFixed(5) : p.toLocaleString(undefined, {minimumFractionDigits:2});
-            document.getElementById('display-price').className = `main-price ${color}`;
-            document.getElementById('display-change').innerText = (P>0?"+":"") + P.toFixed(2) + "%";
-            document.getElementById('display-change').className = `stat-val ${color}`;
-            document.getElementById('display-high').innerText = parseFloat(data.h).toLocaleString();
-            document.getElementById('display-low').innerText = parseFloat(data.l).toLocaleString();
-        }
-
         // 실행
-        currentSymbolObj = spotCoins[0];
-        startTickerWS();
-        loadMarket(spotCoins[0], 'spot');
+        loadMarket('btc', 'spot');
 
     </script>
 </body>
