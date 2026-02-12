@@ -556,10 +556,43 @@
       style:             '1',
       locale:            'kr',
       toolbar_bg:        '#0d1017',
+
+      /* ── Studies ── */
+      studies: [
+        { id: 'MAExp@tv-basicstudies', inputs: { in_0: 20  } },
+        { id: 'MAExp@tv-basicstudies', inputs: { in_0: 60  } },
+        { id: 'MAExp@tv-basicstudies', inputs: { in_0: 120 } },
+        { id: 'MAExp@tv-basicstudies', inputs: { in_0: 200 } },
+        { id: 'RSI@tv-basicstudies' },
+      ],
+
+      /* ── Study overrides: 인덱스 0~3 = EMA 20/60/120/200 ── */
       studies_overrides: {
+        /* Volume */
         'volume.volume.color.0': '#ff3a5c55',
         'volume.volume.color.1': '#00e87a55',
+
+        /* EMA 20 — 주황 */
+        'moving average exponential.0.plot.color':     '#ff8c00',
+        'moving average exponential.0.plot.linewidth': 1,
+        /* EMA 60 — 초록 */
+        'moving average exponential.1.plot.color':     '#00e87a',
+        'moving average exponential.1.plot.linewidth': 1,
+        /* EMA 120 — 빨강 */
+        'moving average exponential.2.plot.color':     '#ff3a5c',
+        'moving average exponential.2.plot.linewidth': 1,
+        /* EMA 200 — 파랑 */
+        'moving average exponential.3.plot.color':     '#4d9fff',
+        'moving average exponential.3.plot.linewidth': 2,
+
+        /* RSI — 골드 */
+        'relative strength index.plot.color':                  '#c8a84b',
+        'relative strength index.plot.linewidth':              1,
+        'relative strength index.upper band.color':            '#1a2035',
+        'relative strength index.lower band.color':            '#1a2035',
+        'relative strength index.hlines background.color':     '#c8a84b08',
       },
+
       enable_publishing: false,
       hide_top_toolbar:  true,
       hide_side_toolbar: false,
@@ -601,8 +634,6 @@
         /* ── Volume ── */
         'volume.volume.color.0':                               '#ff3a5c55',
         'volume.volume.color.1':                               '#00e87a55',
-        'volume.volume ma.color':                              '#c8a84b',
-        'volume.volume ma.linewidth':                          1,
         'volume.volume ma.visible':                            false,
 
         /* ── Price line ── */
@@ -612,56 +643,16 @@
         /* ── Countdown ── */
         'mainSeriesProperties.showCountdown':                  true,
 
-        /* ── Right scale labels & lines ── */
+        /* ── Right scale labels ── */
         'scalesProperties.showSeriesLastValue':                true,
         'scalesProperties.showStudyLastValue':                 true,
         'scalesProperties.showSymbolLabels':                   true,
         'scalesProperties.showStudyPlotLabels':                true,
-        'scalesProperties.showBidAskLabels':                   true,
-        'scalesProperties.showPrePostMarketPriceLabel':        true,
-        'scalesProperties.showFundamentalNameLabel':           true,
-        'scalesProperties.showFundamentalLastValue':           true,
         'mainSeriesProperties.showPriceLine':                  true,
         'mainSeriesProperties.showPrevClosePriceLine':         true,
         'mainSeriesProperties.prevClosePriceLineWidth':        1,
         'mainSeriesProperties.prevClosePriceLineColor':        '#4e5a72',
       }
-    });
-
-    tvWidget.onChartReady(() => {
-      const chart = tvWidget.chart();
-
-      /* ── EMA 20 주황 ── */
-      chart.createStudy('Moving Average Exponential', false, false,
-        [20], { 'Plot.color': '#ff8c00', 'Plot.linewidth': 1 }
-      );
-
-      /* ── EMA 60 초록 ── */
-      chart.createStudy('Moving Average Exponential', false, false,
-        [60], { 'Plot.color': '#00e87a', 'Plot.linewidth': 1 }
-      );
-
-      /* ── EMA 120 빨강 ── */
-      chart.createStudy('Moving Average Exponential', false, false,
-        [120], { 'Plot.color': '#ff3a5c', 'Plot.linewidth': 1 }
-      );
-
-      /* ── EMA 200 파랑 ── */
-      chart.createStudy('Moving Average Exponential', false, false,
-        [200], { 'Plot.color': '#4d9fff', 'Plot.linewidth': 2 }
-      );
-
-      /* ── RSI 골드 ── */
-      chart.createStudy('Relative Strength Index', false, false,
-        [14],
-        {
-          'Plot.color':              '#c8a84b',
-          'Plot.linewidth':          1,
-          'Overbought.color':        '#1a2035',
-          'Oversold.color':          '#1a2035',
-          'Hlines Background.color': '#c8a84b08',
-        }
-      );
     });
   }
 
