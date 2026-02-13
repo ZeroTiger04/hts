@@ -1,21 +1,15 @@
-/* ══════════════════════════════════════════════
-   ULTIMATE TRADER ENGINE (TV + BINANCE)
-══════════════════════════════════════════════ */
-
 const mainCanvas = document.getElementById('mainLayer');
 const uiCanvas = document.getElementById('uiLayer');
 const ctxMain = mainCanvas.getContext('2d');
 const ctxUI = uiCanvas.getContext('2d');
 const elPrice = document.getElementById('displayPrice');
 const elChange = document.getElementById('displayChange');
-const elHigh = document.getElementById('displayHigh');
-const elLow = document.getElementById('displayLow');
 const elLoader = document.getElementById('loader');
 const elCoin = document.getElementById('coinSelect');
 
 const CONFIG = {
     up: '#0ecb81', down: '#f6465d', bg: '#161a1e',
-    grid: '#23272d', paddingRight: 80, volRatio: 0.2
+    grid: '#23272d', paddingRight: 80, volRatio: 0.15
 };
 
 const PROXIES = [
@@ -43,15 +37,15 @@ window.addEventListener('resize', resize);
 
 function changeCoin() { currentSymbol = elCoin.value; loadHistory(currentInterval); }
 function changeInterval(iv) {
-    if(currentInterval === iv) return;
     document.querySelectorAll('.iv-btn').forEach(b => b.classList.remove('active'));
     event.target.classList.add('active');
     currentInterval = iv; loadHistory(iv);
 }
 
+// 과거 데이터 로드
 async function loadHistory(iv) {
     elLoader.classList.remove('hide');
-    const url = `https://api.binance.com/api/v3/klines?symbol=${currentSymbol}&interval=${iv}&limit=150`;
+    const url = `https://api.binance.com/api/v3/klines?symbol=${currentSymbol}&interval=${iv}&limit=120`;
     
     try {
         const res = await fetch(PROXIES[proxyIdx](url));
@@ -62,29 +56,35 @@ async function loadHistory(iv) {
         }));
         elLoader.classList.add('hide');
         drawMain();
-        startTicker();
+        startHighSpeedTicker(); // 1초 단위 갱신 시작
     } catch(e) {
         proxyIdx = (proxyIdx + 1) % PROXIES.length;
         setTimeout(() => loadHistory(iv), 2000);
     }
 }
 
-function startTicker() {
-    setInterval(async () => {
+// 1초 단위 고속 폴링 (실시간 움직임 구현)
+function startHighSpeedTicker() {
+    if(window.tickerInterval) clearInterval(window.tickerInterval);
+    
+    window.tickerInterval = setInterval(async () => {
         const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${currentSymbol}`;
         try {
             const res = await fetch(PROXIES[0](url));
             const d = await res.json();
+            
             if(candles.length > 0) {
                 let last = candles[candles.length - 1];
+                // 실시간 가격을 마지막 캔들에 반영
                 last.close = parseFloat(d.lastPrice);
                 last.high = Math.max(last.high, last.close);
                 last.low = Math.min(last.low, last.close);
+                
                 updateTickerUI(d);
-                drawMain();
+                drawMain(); // 캔들을 다시 그려서 움직임 표현
             }
         } catch(e) {}
-    }, 3000);
+    }, 1000); // 1초마다 갱신
 }
 
 function drawMain() {
@@ -95,7 +95,7 @@ function drawMain() {
         minP = Math.min(minP, c.low); maxP = Math.max(maxP, c.high);
         maxV = Math.max(maxV, c.volume);
     });
-    const padding = (maxP - minP) * 0.15;
+    const padding = (maxP - minP) * 0.1;
     minP -= padding; maxP += padding; pRange = maxP - minP;
 
     // 그리드
@@ -110,9 +110,9 @@ function drawMain() {
         const color = c.close >= c.open ? CONFIG.up : CONFIG.down;
         ctxMain.fillStyle = color; ctxMain.strokeStyle = color;
 
-        // 거래량
+        // 거래량 바 (하단)
         const vH = (c.volume / maxV) * (height * CONFIG.volRatio);
-        ctxMain.globalAlpha = 0.15; ctxMain.fillRect(x, height - vH, realW, vH); ctxMain.globalAlpha = 1.0;
+        ctxMain.globalAlpha = 0.1; ctxMain.fillRect(x, height - vH, realW, vH); ctxMain.globalAlpha = 1.0;
 
         // 꼬리 & 몸통
         ctxMain.beginPath();
@@ -122,12 +122,17 @@ function drawMain() {
         ctxMain.fillRect(x, Math.min(yO, yC), realW, Math.max(1, Math.abs(yC - yO)));
     });
 
-    // 가격 라벨
+    // 실시간 가격선
     const last = candles[candles.length-1];
     const yL = height - ((last.close - minP) / pRange) * height;
+    ctxMain.strokeStyle = '#fff'; ctxMain.setLineDash([2, 2]);
+    ctxMain.beginPath(); ctxMain.moveTo(0, yL); ctxMain.lineTo(width, yL); ctxMain.stroke(); ctxMain.setLineDash([]);
+    
+    // 우측 가격 라벨
     ctxMain.fillStyle = last.close >= last.open ? CONFIG.up : CONFIG.down;
     ctxMain.fillRect(width - CONFIG.paddingRight, yL - 10, CONFIG.paddingRight, 20);
-    ctxMain.fillStyle = '#fff'; ctxMain.fillText(last.close.toLocaleString(), width - CONFIG.paddingRight + 5, yL + 4);
+    ctxMain.fillStyle = '#fff'; ctxMain.font = 'bold 11px Arial';
+    ctxMain.fillText(last.close.toLocaleString(), width - CONFIG.paddingRight + 5, yL + 4);
 }
 
 function drawUI() {
@@ -152,8 +157,6 @@ function updateTickerUI(d) {
     elPrice.className = `value ${pct >= 0 ? 'text-up' : 'text-down'}`;
     elChange.innerText = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
     elChange.className = `value ${pct >= 0 ? 'text-up' : 'text-down'}`;
-    elHigh.innerText = parseFloat(d.highPrice).toLocaleString();
-    elLow.innerText = parseFloat(d.lowPrice).toLocaleString();
 }
 
 resize(); loadHistory('1d');

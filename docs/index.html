@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO TRADER | TV + BINANCE</title>
+    <title>LIVE TRADER | REAL-TIME</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
 </head>
@@ -16,42 +16,36 @@
                     <option value="ETHUSDT">ETH / USDT</option>
                     <option value="SOLUSDT">SOL / USDT</option>
                     <option value="XRPUSDT">XRP / USDT</option>
-                    <option value="DOGEUSDT">DOGE / USDT</option>
                 </select>
                 <div class="header-stats">
                     <div class="stat-item">
                         <span class="label">Last Price</span>
-                        <span class="value" id="displayPrice">Loading...</span>
+                        <span class="value" id="displayPrice">Connecting...</span>
                     </div>
                     <div class="stat-item">
                         <span class="label">24h Change</span>
                         <span class="value" id="displayChange">0.00%</span>
                     </div>
-                    <div class="stat-item hide-mobile">
-                        <span class="label">24h High</span>
-                        <span class="value" id="displayHigh">0.00</span>
-                    </div>
-                    <div class="stat-item hide-mobile">
-                        <span class="label">24h Low</span>
-                        <span class="value" id="displayLow">0.00</span>
-                    </div>
                 </div>
+            </div>
+
+            <div class="live-status">
+                <div class="pulse-dot"></div>
+                <span id="statusText">LIVE</span>
             </div>
 
             <div class="intervals">
                 <button class="iv-btn" onclick="changeInterval('1m')">1m</button>
                 <button class="iv-btn" onclick="changeInterval('5m')">5m</button>
-                <button class="iv-btn" onclick="changeInterval('15m')">15m</button>
                 <button class="iv-btn" onclick="changeInterval('1h')">1H</button>
                 <button class="iv-btn active" onclick="changeInterval('1d')">1D</button>
-                <button class="iv-btn" onclick="changeInterval('1w')">1W</button>
             </div>
         </header>
 
         <div class="chart-container">
             <canvas id="mainLayer"></canvas>
             <canvas id="uiLayer"></canvas>
-            <div id="loader" class="loader">SYNCHRONIZING...</div>
+            <div id="loader" class="loader">FETCHING LIVE DATA...</div>
         </div>
     </div>
     <script src="script.js"></script>
