@@ -3,33 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ULTIMATE CLEAN CHART</title>
+    <title>PRO TRADER - SEARCH & LIVE</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="shell">
         <header>
             <div class="header-left">
-                <div class="coin-brand">
-                    <span class="symbol">BTC / USDT</span>
-                    <div class="live-indicator">
-                        <div class="pulse-dot"></div>
-                        <span>REAL-TIME</span>
+                <div class="symbol-selector" id="symbol-btn">
+                    <div class="current-symbol">
+                        <span id="display-symbol">BTC / USDT</span> 
+                        <i class="fas fa-caret-down"></i>
+                    </div>
+                    <div class="dropdown-menu" id="dropdown">
+                        <div class="search-box" onclick="event.stopPropagation()">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="coinSearch" placeholder="Search coin or name..." oninput="filterCoins()">
+                        </div>
+                        <div id="coinList" class="coin-list"></div>
                     </div>
                 </div>
                 
                 <div class="main-stats">
                     <div class="stat-group">
-                        <span class="price" id="displayPrice">0.00</span>
+                        <span class="price" id="displayPrice">Loading...</span>
                         <span class="change" id="displayChange">0.00%</span>
                     </div>
                     <div class="divider"></div>
-                    <div class="stat-detail hide-mobile">
+                    <div class="stat-detail">
                         <span class="label">24h High</span>
                         <span class="value" id="displayHigh">0.00</span>
                     </div>
-                    <div class="stat-detail hide-mobile">
+                    <div class="stat-detail">
                         <span class="label">24h Low</span>
                         <span class="value" id="displayLow">0.00</span>
                     </div>
@@ -41,7 +48,6 @@
                 <button class="iv-btn" onclick="changeInterval('5m')">5m</button>
                 <button class="iv-btn" onclick="changeInterval('15m')">15m</button>
                 <button class="iv-btn" onclick="changeInterval('1h')">1H</button>
-                <button class="iv-btn" onclick="changeInterval('4h')">4H</button>
                 <button class="iv-btn active" onclick="changeInterval('1d')">1D</button>
             </div>
         </header>
@@ -49,12 +55,9 @@
         <div class="chart-container">
             <canvas id="mainLayer"></canvas>
             <canvas id="uiLayer"></canvas>
-            
-            <div id="loader" class="loader">CONNECTING TO BINANCE CLOUD...</div>
-            <div class="chart-label">Binance Pro Data Feed</div>
+            <div id="loader" class="loader">CONNECTING...</div>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
