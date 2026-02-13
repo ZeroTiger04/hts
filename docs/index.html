@@ -1,9 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Test</title>
+  <meta charset="UTF-8">
+  <title>LC Test</title>
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 </head>
-<body>
-  <h1>사이트 테스트 성공</h1>
+<body style="margin:0;background:#060810">
+  <div id="chart" style="width:100vw;height:100vh"></div>
+
+  <script>
+    const chart = LightweightCharts.createChart(
+      document.getElementById('chart'),
+      { layout:{background:{color:'#060810'},textColor:'#d8dde8'} }
+    );
+    chart.addCandlestickSeries().setData([
+      {time: 1700000000, open:100, high:120, low:90, close:110},
+      {time: 1700086400, open:110, high:130, low:100, close:125},
+    ]);
+  </script>
 </body>
 </html>
