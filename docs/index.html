@@ -3,57 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO TRADER - TV & BINANCE</title>
-    
-    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>ULTIMATE CLEAN CHART</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="shell">
         <header>
             <div class="header-left">
-                <div class="symbol-selector" id="symbol-btn">
-                    <div class="current-symbol">
-                        <span id="display-symbol">BTC/USDT</span> 
-                        <i class="fas fa-caret-down"></i>
+                <div class="coin-brand">
+                    <span class="symbol">BTC / USDT</span>
+                    <div class="live-indicator">
+                        <div class="pulse-dot"></div>
+                        <span>REAL-TIME</span>
                     </div>
-                    <div class="dropdown-menu" id="dropdown"></div>
                 </div>
-
-                <div class="main-price-info">
-                    <div class="price-val" id="display-price">0.00</div>
+                
+                <div class="main-stats">
                     <div class="stat-group">
-                        <div class="stat-box">
-                            <span>24h Change</span>
-                            <span class="stat-val" id="display-change">0.00%</span>
-                        </div>
-                        <div class="stat-box hide-mobile">
-                            <span>24h High</span>
-                            <span class="stat-val" id="display-high">0.00</span>
-                        </div>
-                        <div class="stat-box hide-mobile">
-                            <span>24h Low</span>
-                            <span class="stat-val" id="display-low">0.00</span>
-                        </div>
+                        <span class="price" id="displayPrice">0.00</span>
+                        <span class="change" id="displayChange">0.00%</span>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="stat-detail hide-mobile">
+                        <span class="label">24h High</span>
+                        <span class="value" id="displayHigh">0.00</span>
+                    </div>
+                    <div class="stat-detail hide-mobile">
+                        <span class="label">24h Low</span>
+                        <span class="value" id="displayLow">0.00</span>
                     </div>
                 </div>
             </div>
 
             <div class="intervals">
-                <button class="iv-btn" onclick="setIv('1')">1m</button>
-                <button class="iv-btn" onclick="setIv('3')">3m</button>
-                <button class="iv-btn" onclick="setIv('5')">5m</button>
-                <button class="iv-btn" onclick="setIv('15')">15m</button>
-                <button class="iv-btn" onclick="setIv('60')">1H</button>
-                <button class="iv-btn" onclick="setIv('240')">4H</button>
-                <button class="iv-btn active" onclick="setIv('D')">1D</button>
-                <button class="iv-btn" onclick="setIv('W')">1W</button>
+                <button class="iv-btn" onclick="changeInterval('1m')">1m</button>
+                <button class="iv-btn" onclick="changeInterval('5m')">5m</button>
+                <button class="iv-btn" onclick="changeInterval('15m')">15m</button>
+                <button class="iv-btn" onclick="changeInterval('1h')">1H</button>
+                <button class="iv-btn" onclick="changeInterval('4h')">4H</button>
+                <button class="iv-btn active" onclick="changeInterval('1d')">1D</button>
             </div>
         </header>
 
         <div class="chart-container">
-            <div id="tv_chart_container"></div>
+            <canvas id="mainLayer"></canvas>
+            <canvas id="uiLayer"></canvas>
+            
+            <div id="loader" class="loader">CONNECTING TO BINANCE CLOUD...</div>
+            <div class="chart-label">Binance Pro Data Feed</div>
         </div>
     </div>
 
