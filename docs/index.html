@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZERO-DEP CRYPTO</title>
+    <title>PRO CHART - BTC/USDT</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,32 +11,50 @@
         <header>
             <div class="status-box">
                 <div class="dot"></div>
-                <span>OFFLINE SIMULATION</span>
+                <span>LIVE DATA</span>
             </div>
         </header>
 
         <div class="ticker-bar">
-            <div class="coin-info">
-                <div class="coin-icon">₿</div> <div class="coin-text">
-                    <div class="symbol">BTC / USDT</div>
-                    <div class="sub">Native Chart</div>
+            <div class="coin-section">
+                <div class="coin-info">
+                    <div class="coin-icon">₿</div>
+                    <div class="coin-text">
+                        <div class="symbol">BTC / USDT</div>
+                        <div class="sub">CryptoCompare</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="price-box">
-                <div class="label">Current Price</div>
-                <div class="value" id="price">0.00</div>
+            <div class="interval-selector">
+                <button class="iv-btn" onclick="changeInterval('1m')">1m</button>
+                <button class="iv-btn" onclick="changeInterval('3m')">3m</button>
+                <button class="iv-btn" onclick="changeInterval('5m')">5m</button>
+                <button class="iv-btn" onclick="changeInterval('15m')">15m</button>
+                <button class="iv-btn" onclick="changeInterval('1h')">1H</button>
+                <button class="iv-btn" onclick="changeInterval('4h')">4H</button>
+                <button class="iv-btn active" onclick="changeInterval('1d')">1D</button>
+                <button class="iv-btn" onclick="changeInterval('1w')">1W</button>
+                <button class="iv-btn" onclick="changeInterval('1M')">1M</button>
             </div>
-            
-            <div class="stat-box">
-                <div class="label">24h Change</div>
-                <div class="value" id="change">0.00%</div>
+
+            <div class="price-section">
+                <div class="price-box">
+                    <div class="label">Price</div>
+                    <div class="value" id="price">0.00</div>
+                </div>
+                
+                <div class="stat-box">
+                    <div class="label">24h Chg</div>
+                    <div class="value" id="change">0.00%</div>
+                </div>
             </div>
         </div>
 
         <div class="chart-area">
             <canvas id="chartCanvas"></canvas>
             <div class="crosshair-info" id="crosshairInfo"></div>
+            <div id="loading" class="loading-overlay hide">LOADING...</div>
         </div>
     </div>
 

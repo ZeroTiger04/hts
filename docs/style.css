@@ -7,30 +7,41 @@
     --down: #f6465d;
     --accent: #fcd535;
     --grid: #252930;
+    --btn-hover: #2b3139;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: var(--bg); color: var(--text); font-family: 'Courier New', monospace; height: 100vh; overflow: hidden; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; height: 100vh; overflow: hidden; }
 
 .shell { display: flex; flex-direction: column; height: 100%; }
 
 /* 헤더 */
-header { height: 40px; border-bottom: 1px solid var(--grid); display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; font-size: 12px; }
-.status-box { display: flex; align-items: center; gap: 8px; color: var(--up); }
-.dot { width: 8px; height: 8px; background: var(--up); border-radius: 50%; box-shadow: 0 0 10px var(--up); animation: blink 2s infinite; }
+header { height: 30px; border-bottom: 1px solid var(--grid); display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; font-size: 11px; background: var(--card); }
+.status-box { display: flex; align-items: center; gap: 6px; color: var(--up); font-weight: bold; }
+.dot { width: 6px; height: 6px; background: var(--up); border-radius: 50%; box-shadow: 0 0 8px var(--up); animation: blink 2s infinite; }
 @keyframes blink { 50% { opacity: 0.5; } }
 
-/* 티커 바 */
-.ticker-bar { height: 70px; border-bottom: 1px solid var(--grid); display: flex; align-items: center; padding: 0 20px; gap: 40px; background: var(--card); }
+/* 티커 바 (레이아웃 수정) */
+.ticker-bar { height: 60px; border-bottom: 1px solid var(--grid); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; background: var(--bg); }
 
-.coin-info { display: flex; align-items: center; gap: 15px; }
-.coin-icon { width: 40px; height: 40px; background: #f7931a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 24px; }
-.symbol { font-size: 18px; font-weight: bold; }
-.sub { font-size: 12px; color: var(--text-dim); }
+.coin-section { display: flex; align-items: center; width: 200px; }
+.coin-info { display: flex; align-items: center; gap: 12px; }
+.coin-icon { width: 32px; height: 32px; background: #f7931a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; }
+.symbol { font-size: 16px; font-weight: bold; }
+.sub { font-size: 11px; color: var(--text-dim); }
 
-.price-box, .stat-box { display: flex; flex-direction: column; justify-content: center; }
-.label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px; }
-.value { font-size: 20px; font-weight: bold; letter-spacing: 1px; }
+/* [NEW] 시간 선택 버튼 스타일 */
+.interval-selector { display: flex; gap: 2px; background: var(--card); padding: 4px; border-radius: 4px; border: 1px solid var(--grid); }
+.iv-btn { 
+    background: none; border: none; color: var(--text-dim); 
+    padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 2px; transition: all 0.2s; 
+}
+.iv-btn:hover { color: var(--text); background: var(--btn-hover); }
+.iv-btn.active { color: var(--accent); background: var(--btn-hover); }
+
+.price-section { display: flex; gap: 30px; text-align: right; }
+.label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 2px; }
+.value { font-size: 16px; font-weight: bold; font-family: 'Roboto Mono', monospace; }
 
 .up-text { color: var(--up); }
 .down-text { color: var(--down); }
@@ -41,7 +52,15 @@ canvas { display: block; width: 100%; height: 100%; }
 
 .crosshair-info {
     position: absolute; top: 10px; left: 10px;
-    background: rgba(0,0,0,0.7); padding: 5px 10px;
+    background: rgba(22, 26, 30, 0.9); padding: 6px 12px;
     border-radius: 4px; font-size: 12px; pointer-events: none;
-    display: none; border: 1px solid var(--grid);
+    display: none; border: 1px solid var(--grid); color: #fff; z-index: 10;
 }
+
+.loading-overlay {
+    position: absolute; inset: 0; background: rgba(11, 14, 17, 0.8);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dim); font-size: 14px; letter-spacing: 2px;
+    z-index: 20;
+}
+.loading-overlay.hide { display: none; }
