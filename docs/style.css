@@ -1,60 +1,95 @@
 :root {
-    --bg-color: #161a1e;       /* 바이낸스 배경 */
-    --card-bg: #1e2329;        /* 헤더 배경 */
-    --grid-color: #2b3139;     /* 격자 색상 */
-    --text-primary: #eaecef;   /* 흰색 글씨 */
-    --text-secondary: #848e9c; /* 회색 글씨 */
-    --up-color: #0ecb81;       /* 상승 (초록) */
-    --down-color: #f6465d;     /* 하락 (빨강) */
-    --crosshair: #ffffff;      /* 십자선 */
-    --yellow: #fcd535;         /* 강조색 */
+    --bg-body: #090b0e;        /* 페이지 배경 (아주 어두움) */
+    --bg-card: #161a1e;        /* 차트 카드 배경 */
+    --grid-color: #2b3139;     /* 테두리 색상 */
+    --text-primary: #eaecef;
+    --text-secondary: #848e9c;
+    --up-color: #0ecb81;
+    --down-color: #f6465d;
+    --accent: #fcd535;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background-color: var(--bg-color); color: var(--text-primary); font-family: 'Binance Plex', Arial, sans-serif; height: 100vh; overflow: hidden; }
 
-.shell { display: flex; flex-direction: column; height: 100%; }
-
-/* 헤더 스타일 */
-header {
-    height: 50px; background-color: var(--bg-color); border-bottom: 1px solid var(--grid-color);
-    display: flex; align-items: center; padding: 0 16px; gap: 24px;
+body { 
+    background-color: var(--bg-body); 
+    color: var(--text-primary); 
+    font-family: 'Binance Plex', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    height: 100vh; 
+    display: flex;             /* 중앙 정렬용 Flexbox */
+    align-items: center;       /* 수직 중앙 */
+    justify-content: center;   /* 수평 중앙 */
+    overflow: hidden;
 }
 
-.pair-info { display: flex; align-items: baseline; gap: 8px; }
-.symbol { font-size: 16px; font-weight: 600; color: var(--text-primary); }
-.sub-text { font-size: 12px; color: var(--text-secondary); }
+/* 메인 컨테이너 (카드 스타일) */
+.shell { 
+    width: 95%;                /* 모바일 대응 */
+    max-width: 1100px;         /* 최대 너비 제한 (너무 넓어지지 않게) */
+    height: 650px;             /* 적당한 높이 고정 */
+    background-color: var(--bg-card);
+    border: 1px solid var(--grid-color);
+    border-radius: 12px;       /* 둥근 모서리 */
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5); /* 그림자 효과 */
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden;          /* 자식 요소가 둥근 모서리 넘치지 않게 */
+}
 
-.price-info { display: flex; flex-direction: column; }
-.current-price { font-size: 14px; font-weight: bold; color: var(--up-color); font-family: monospace; }
-.price-change { font-size: 10px; color: var(--text-secondary); }
+/* 헤더 */
+header {
+    height: 60px;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--grid-color);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    justify-content: space-between;
+}
 
-.intervals { display: flex; margin-left: auto; gap: 4px; }
+/* 왼쪽 정보 영역 */
+.left-info { display: flex; align-items: center; gap: 20px; }
+.pair-info { display: flex; flex-direction: column; }
+.symbol { font-size: 18px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+.sub-text { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+
+.price-info { display: flex; flex-direction: column; align-items: flex-end; }
+.current-price { font-size: 18px; font-weight: 700; font-family: 'Roboto Mono', monospace; letter-spacing: -0.5px; }
+.price-change { font-size: 12px; font-weight: 500; margin-top: 2px; }
+
+/* 시간 버튼 영역 */
+.intervals { display: flex; gap: 4px; background: #1e2329; padding: 4px; border-radius: 6px; }
 .iv-btn {
     background: none; border: none; color: var(--text-secondary);
-    font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px;
-    border-radius: 4px; transition: 0.2s;
+    font-size: 12px; font-weight: 600; cursor: pointer; padding: 6px 10px;
+    border-radius: 4px; transition: all 0.2s ease;
 }
-.iv-btn:hover { color: var(--text-primary); background-color: var(--card-bg); }
-.iv-btn.active { color: var(--yellow); }
+.iv-btn:hover { color: var(--text-primary); background-color: #2b3139; }
+.iv-btn.active { color: #161a1e; background-color: var(--accent); } /* 활성화 시 노란색 */
 
-/* 차트 컨테이너 (중요: 캔버스 겹치기) */
-.chart-container { flex: 1; position: relative; cursor: crosshair; background-color: var(--bg-color); }
-
-canvas {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    display: block; /* 공백 제거 */
+/* 차트 영역 */
+.chart-container { 
+    flex: 1; 
+    position: relative; 
+    cursor: crosshair; 
+    background-color: var(--bg-card); 
 }
 
-/* UI 레이어는 메인 레이어 위에 있어야 함 */
+canvas { 
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+    display: block; 
+}
 #uiLayer { z-index: 10; }
 
+/* 로딩 애니메이션 */
 .loader {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    color: var(--text-secondary); font-size: 12px; pointer-events: none;
+    color: var(--accent); font-size: 14px; font-weight: bold; letter-spacing: 1px;
+    background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 20px;
+    pointer-events: none; opacity: 1; transition: opacity 0.3s;
 }
-.loader.hide { display: none; }
+.loader.hide { opacity: 0; }
 
-/* 색상 유틸리티 */
+/* 유틸리티 */
 .text-up { color: var(--up-color) !important; }
 .text-down { color: var(--down-color) !important; }

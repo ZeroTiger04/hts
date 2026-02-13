@@ -3,39 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO CHART - TV DATA</title>
+    <title>PRO TRADER CHART</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="shell">
         <header>
-            <div class="pair-info">
-                <h1 class="symbol">BTC/USDT</h1>
-                <span class="sub-text">Binance Data</span>
-            </div>
-            
-            <div class="price-info">
-                <span class="current-price" id="displayPrice">Loading...</span>
-                <span class="price-change" id="displayChange">0.00%</span>
+            <div class="left-info">
+                <div class="pair-info">
+                    <span class="symbol">BTC / USDT</span>
+                    <span class="sub-text">Binance Real-time</span>
+                </div>
+                <div class="price-info">
+                    <span class="current-price" id="displayPrice">Loading...</span>
+                    <span class="price-change" id="displayChange">0.00%</span>
+                </div>
             </div>
 
             <div class="intervals">
                 <button class="iv-btn" onclick="changeInterval('1m')">1m</button>
-                <button class="iv-btn" onclick="changeInterval('3m')">3m</button>
                 <button class="iv-btn" onclick="changeInterval('5m')">5m</button>
                 <button class="iv-btn" onclick="changeInterval('15m')">15m</button>
                 <button class="iv-btn" onclick="changeInterval('1h')">1H</button>
                 <button class="iv-btn" onclick="changeInterval('4h')">4H</button>
                 <button class="iv-btn active" onclick="changeInterval('1d')">1D</button>
                 <button class="iv-btn" onclick="changeInterval('1w')">1W</button>
-                <button class="iv-btn" onclick="changeInterval('1M')">1M</button>
             </div>
         </header>
 
         <div class="chart-container">
             <canvas id="mainLayer"></canvas>
             <canvas id="uiLayer"></canvas>
-            <div id="loader" class="loader">CONNECTING TO BINANCE...</div>
+            <div id="loader" class="loader">CONNECTING...</div>
         </div>
     </div>
 
