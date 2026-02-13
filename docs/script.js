@@ -1,193 +1,206 @@
-/* ══════════════════════════════════════════════
-   PRO LIVE ENGINE v8 (Full WebSocket Integration)
-══════════════════════════════════════════════ */
-
-const mainCanvas = document.getElementById('mainLayer');
-const uiCanvas = document.getElementById('uiLayer');
-const ctxMain = mainCanvas.getContext('2d');
-const ctxUI = uiCanvas.getContext('2d');
-const elLoader = document.getElementById('loader');
-
-// 종목 목록
+/* ─── Coin definitions ─── */
 const coins = [
-    { s: 'btcusdt', n: 'BTC', name:'Bitcoin' },
-    { s: 'ethusdt', n: 'ETH', name:'Ethereum' },
-    { s: 'solusdt', n: 'SOL', name:'Solana' },
-    { s: 'xrpusdt', n: 'XRP', name:'Ripple' },
-    { s: 'dogeusdt', n: 'DOGE', name:'Dogecoin' },
-    { s: 'adausdt', n: 'ADA', name:'Cardano' },
-    { s: 'pepeusdt', n: 'PEPE', name:'Pepe' }
+    { id:'btc',  s:'btcusdt',  n:'BTC',  name:'Bitcoin',  tv:'BINANCE:BTCUSDT',  logo:'https://assets.coingecko.com/coins/images/1/small/bitcoin.png' },
+    { id:'eth',  s:'ethusdt',  n:'ETH',  name:'Ethereum', tv:'BINANCE:ETHUSDT',  logo:'https://assets.coingecko.com/coins/images/279/small/ethereum.png' },
+    { id:'xrp',  s:'xrpusdt',  n:'XRP',  name:'Ripple',   tv:'BINANCE:XRPUSDT',  logo:'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png' },
+    { id:'sol',  s:'solusdt',  n:'SOL',  name:'Solana',   tv:'BINANCE:SOLUSDT',  logo:'https://assets.coingecko.com/coins/images/4128/small/solana.png' },
+    { id:'bnb',  s:'bnbusdt',  n:'BNB',  name:'BNB',      tv:'BINANCE:BNBUSDT',  logo:'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png' },
+    { id:'doge', s:'dogeusdt', n:'DOGE', name:'Dogecoin', tv:'BINANCE:DOGEUSDT', logo:'https://assets.coingecko.com/coins/images/5/small/dogecoin.png' },
+    { id:'ada',  s:'adausdt',  n:'ADA',  name:'Cardano',  tv:'BINANCE:ADAUSDT',  logo:'https://assets.coingecko.com/coins/images/975/small/cardano.png' },
+    { id:'pepe', s:'pepeusdt', n:'PEPE', name:'Pepe',     tv:'BINANCE:PEPEUSDT', logo:'https://assets.coingecko.com/coins/images/29850/small/pepe-token.jpeg' },
 ];
 
-let currentCoin = coins[0];
-let currentInterval = '1d';
-let candles = [];
-let width, height, minP, maxP, pRange;
-let mouseX = -1, mouseY = -1;
-let ws = null; // 실시간 웹소켓
+let currentCoin      = coins[0];
+let currentInterval = 'D';
+let tvWidget        = null;
+let lastPrices      = {};
 
-// 줌 설정
-let visibleCount = 80;
-const MIN_C = 20;
-const MAX_C = 160;
-
-function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    width = mainCanvas.parentElement.clientWidth;
-    height = mainCanvas.parentElement.clientHeight;
-    [mainCanvas, uiCanvas].forEach(cvs => {
-        cvs.width = width * dpr; cvs.height = height * dpr;
-        cvs.getContext('2d').scale(dpr, dpr);
-    });
-    if(candles.length > 0) drawMain();
-}
-window.addEventListener('resize', resize);
-
-// 종목 선택 및 검색 로직
-const dropdown = document.getElementById('dropdown');
-const coinList = document.getElementById('coinList');
-const searchInput = document.getElementById('coinSearch');
-
-function renderCoins(filter = "") {
-    coinList.innerHTML = "";
-    const filtered = coins.filter(c => c.n.toLowerCase().includes(filter.toLowerCase()));
-    filtered.forEach(c => {
-        const item = document.createElement('div');
-        item.className = 'm-item';
-        item.onclick = (e) => { e.stopPropagation(); selectCoin(c); };
-        item.innerHTML = `<span>${c.n}/USDT</span><span id="price-${c.s}">-</span>`;
-        coinList.appendChild(item);
-    });
+/* ─── Smart price formatter ─── */
+function fmtPrice(p) {
+    if (p < 0.0001)   return p.toFixed(8);
+    if (p < 0.01)     return p.toFixed(6);
+    if (p < 1)        return p.toFixed(4);
+    if (p < 100)      return p.toFixed(3);
+    return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-document.getElementById('symbol-btn').onclick = () => { dropdown.classList.toggle('show'); if(dropdown.classList.contains('show')) searchInput.focus(); };
-document.addEventListener('click', (e) => { if(!document.getElementById('symbol-btn').contains(e.target)) dropdown.classList.remove('show'); });
+function fmtVol(v) {
+    if (v >= 1e9) return (v/1e9).toFixed(2) + 'B';
+    if (v >= 1e6) return (v/1e6).toFixed(2) + 'M';
+    if (v >= 1e3) return (v/1e3).toFixed(2) + 'K';
+    return v.toFixed(0);
+}
 
+/* ─── Build dropdown ─── */
+const dropdownEl = document.getElementById('dropdown');
+coins.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'menu-item';
+    item.onclick = (e) => { e.stopPropagation(); selectCoin(c); };
+    item.innerHTML = `
+      <div class="item-left">
+        <div class="item-coin-icon"><img src="${c.logo}" alt="${c.n}"></div>
+        <div class="item-texts">
+          <div class="item-sym">${c.n} / USDT</div>
+          <div class="item-name">${c.name}</div>
+        </div>
+      </div>
+      <div class="item-right">
+        <div class="item-price" id="menu-price-${c.s}">—</div>
+        <div class="item-pct"   id="menu-pct-${c.s}">0.00%</div>
+      </div>`;
+    dropdownEl.appendChild(item);
+});
+
+/* ─── Dropdown toggle ─── */
+const symbolBtn = document.getElementById('symbol-btn');
+symbolBtn.addEventListener('click', () => {
+    dropdownEl.classList.toggle('show');
+    symbolBtn.classList.toggle('open');
+});
+document.addEventListener('click', (e) => {
+    if (!symbolBtn.contains(e.target)) {
+        dropdownEl.classList.remove('show');
+        symbolBtn.classList.remove('open');
+    }
+});
+
+/* ─── Select coin ─── */
 function selectCoin(coin) {
     currentCoin = coin;
-    document.getElementById('display-symbol').innerText = `${coin.n} / USDT`;
-    dropdown.classList.remove('show');
-    loadHistory(currentInterval);
+    document.getElementById('display-symbol').textContent = `${coin.n} / USDT`;
+    const icon = document.getElementById('sym-icon');
+    icon.innerHTML = `<img src="${coin.logo}" alt="${coin.n}">`;
+    loadChart(coin.tv, currentInterval);
+    dropdownEl.classList.remove('show');
+    symbolBtn.classList.remove('open');
+    ['display-price','display-change','display-high','display-low','display-vol']
+      .forEach(id => document.getElementById(id).textContent = '—');
 }
 
-function changeInterval(iv) {
-    document.querySelectorAll('.iv-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-    currentInterval = iv;
-    loadHistory(iv);
+/* ─── Change interval ─── */
+function changeInterval(interval, btn) {
+    currentInterval = interval;
+    document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadChart(currentCoin.tv, interval);
 }
 
-// 1. 과거 데이터 로드 (시작점)
-async function loadHistory(iv) {
-    elLoader.classList.remove('hide');
-    // 우회 프록시를 사용하여 바이낸스 데이터 호출
-    const target = `https://api.binance.com/api/v3/klines?symbol=${currentCoin.s.toUpperCase()}&interval=${iv}&limit=180`;
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`;
-
-    try {
-        const res = await fetch(proxyUrl);
-        const data = await res.json();
-        candles = data.map(d => ({ 
-            time: d[0], open: parseFloat(d[1]), high: parseFloat(d[2]), 
-            low: parseFloat(d[3]), close: parseFloat(d[4]) 
-        }));
-        elLoader.classList.add('hide');
-        drawMain();
-        connectWebSocket(); // 역사 데이터 로드 후 웹소켓 연결
-    } catch(e) { setTimeout(() => loadHistory(iv), 2000); }
-}
-
-// 2. 실시간 웹소켓 연결 (핵심: 실시간 연동)
-function connectWebSocket() {
-    if(ws) ws.close();
-    
-    // 현재 선택된 종목의 티커 정보를 실시간으로 수신
-    ws = new WebSocket(`wss://stream.binance.com:9443/ws/${currentCoin.s}@ticker`);
-
-    ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        const p = parseFloat(data.c);   // 현재가
-        const P = parseFloat(data.P);   // 변동률
-        
-        if (candles.length > 0) {
-            let last = candles[candles.length - 1];
-            
-            // 실시간 가격을 마지막 캔들에 즉시 반영
-            last.close = p;
-            if(p > last.high) last.high = p;
-            if(p < last.low) last.low = p;
-            
-            updateTopUI(p, P, data.h, data.l);
-            drawMain(); // 가격이 바뀔 때마다 차트 재렌더링
+/* ─── Load TradingView chart ─── */
+function loadChart(symbol, interval) {
+    document.getElementById('tv_chart_container').innerHTML = '';
+    tvWidget = new TradingView.widget({
+        autosize:          true,
+        symbol:            symbol,
+        interval:          interval,
+        timezone:          'Asia/Seoul',
+        theme:             'dark',
+        style:             '1',
+        locale:            'kr',
+        toolbar_bg:        '#0d1017',
+        enable_publishing: false,
+        hide_top_toolbar:  true,
+        hide_side_toolbar: false,
+        container_id:      'tv_chart_container',
+        loading_screen:    { backgroundColor: '#060810', foregroundColor: '#c8a84b' },
+        studies_overrides: {
+            'volume.volume.color.0': '#ff3a5c55',
+            'volume.volume.color.1': '#00e87a55',
+            'relative strength index.plot.color':               '#c8a84b',
+            'relative strength index.plot.linewidth':           1,
+            'relative strength index.upper band.color':         '#1a2035',
+            'relative strength index.lower band.color':         '#1a2035',
+            'relative strength index.hlines background.color': '#c8a84b08',
+        },
+        overrides: {
+            'paneProperties.background':                         '#060810',
+            'paneProperties.backgroundType':                     'solid',
+            'paneProperties.vertGridProperties.color':           '#0f1420',
+            'paneProperties.horzGridProperties.color':           '#0f1420',
+            'paneProperties.crossHairProperties.color':          '#c8a84b',
+            'scalesProperties.textColor':                        '#4e5a72',
+            'scalesProperties.lineColor':                        '#1a2035',
+            'mainSeriesProperties.candleStyle.upColor':          '#00e87a',
+            'mainSeriesProperties.candleStyle.downColor':        '#ff3a5c',
+            'mainSeriesProperties.candleStyle.borderUpColor':    '#00e87a',
+            'mainSeriesProperties.candleStyle.borderDownColor':  '#ff3a5c',
+            'mainSeriesProperties.candleStyle.wickUpColor':      '#00e87a80',
+            'mainSeriesProperties.candleStyle.wickDownColor':    '#ff3a5c80',
+            'mainSeriesProperties.priceLineColor':               '#c8a84b',
         }
-    };
-}
-
-function updateTopUI(p, P, h, l) {
-    const elP = document.getElementById('display-price');
-    const elC = document.getElementById('display-change');
-    const color = P >= 0 ? 'c-up' : 'c-down';
-    
-    elP.innerText = p.toLocaleString(undefined, {minimumFractionDigits:2});
-    elP.className = `p-val ${color}`;
-    elC.innerText = (P >= 0 ? "+" : "") + P.toFixed(2) + "%";
-    elC.className = `p-chg ${color}`;
-    
-    document.getElementById('display-high').innerText = parseFloat(h).toLocaleString();
-    document.getElementById('display-low').innerText = parseFloat(l).toLocaleString();
-}
-
-// 3. 차트 렌더링 엔진
-function drawMain() {
-    if(candles.length === 0) return;
-    ctxMain.fillStyle = "#0b0e11"; ctxMain.fillRect(0, 0, width, height);
-    
-    // 줌 레벨에 따른 캔들 필터링
-    const visibleCandles = candles.slice(-visibleCount);
-    const candleW = (width - 100) / visibleCount;
-    const realW = candleW * 0.7;
-
-    minP = Infinity; maxP = -Infinity;
-    visibleCandles.forEach(c => { minP = Math.min(minP, c.low); maxP = Math.max(maxP, c.high); });
-    const padding = (maxP - minP) * 0.15;
-    minP -= padding; maxP += padding; pRange = maxP - minP;
-
-    visibleCandles.forEach((c, i) => {
-        const x = i * candleW, yO = height - ((c.open - minP) / pRange) * height, yC = height - ((c.close - minP) / pRange) * height;
-        const color = c.close >= c.open ? "#0ecb81" : "#f6465d";
-        ctxMain.fillStyle = color; ctxMain.strokeStyle = color;
-        ctxMain.beginPath(); ctxMain.moveTo(x + realW/2, height - ((c.high - minP) / pRange) * height);
-        ctxMain.lineTo(x + realW/2, height - ((c.low - minP) / pRange) * height); ctxMain.stroke();
-        ctxMain.fillRect(x, Math.min(yO, yC), realW, Math.max(1, Math.abs(yC - yO)));
     });
 
-    const last = candles[candles.length - 1];
-    const yL = height - ((last.close - minP) / pRange) * height;
-    ctxMain.fillStyle = last.close >= last.open ? "#0ecb81" : "#f6465d";
-    ctxMain.fillRect(width - 100, yL - 10, 100, 20);
-    ctxMain.fillStyle = '#fff'; ctxMain.font = 'bold 12px Roboto Mono';
-    ctxMain.fillText(last.close.toLocaleString(), width - 95, yL + 4);
+    tvWidget.onChartReady(() => {
+        const chart = tvWidget.chart();
+        const emaList = [
+            { len: 20,  color: '#ff8c00', width: 1 },
+            { len: 60,  color: '#00e87a', width: 1 },
+            { len: 120, color: '#ff3a5c', width: 1 },
+            { len: 200, color: '#4d9fff', width: 2 },
+        ];
+        emaList.forEach(({ len, color, width }) => {
+            chart.createStudy('Moving Average Exponential', false, false, [len], { 'MA.color': color, 'MA.linewidth': width });
+        });
+        chart.createStudy('Relative Strength Index', false, false, [14]);
+    });
 }
 
-// 4. 이벤트 핸들러 (줌 & 십자선)
-uiCanvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    visibleCount += e.deltaY > 0 ? 5 : -5;
-    visibleCount = Math.max(MIN_C, Math.min(MAX_C, visibleCount));
-    drawMain();
-}, { passive: false });
+/* ─── WebSocket ─── */
+const streams = coins.map(c => `${c.s}@ticker`).join('/');
+const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
 
-uiCanvas.onmousemove = (e) => {
-    const rect = uiCanvas.getBoundingClientRect(); mouseX = e.clientX - rect.left; mouseY = e.clientY - rect.top;
-    ctxUI.clearRect(0, 0, width, height);
-    ctxUI.strokeStyle = '#444'; ctxUI.setLineDash([5, 5]);
-    ctxUI.beginPath(); ctxUI.moveTo(mouseX, 0); ctxUI.lineTo(mouseX, height); ctxUI.stroke();
-    ctxUI.beginPath(); ctxUI.moveTo(0, mouseY); ctxUI.lineTo(width, mouseY); ctxUI.stroke();
-    const hP = minP + ((height - mouseY) / height) * pRange;
-    ctxUI.fillStyle = '#1e2329'; ctxUI.fillRect(width - 100, mouseY - 10, 100, 20);
-    ctxUI.fillStyle = '#fff'; ctxUI.fillText(hP.toLocaleString(undefined, {maximumFractionDigits:2}), width - 95, mouseY + 4);
+const badge   = document.getElementById('ws-badge');
+const wsText  = document.getElementById('ws-text');
+
+ws.onopen = () => {
+    badge.classList.add('connected');
+    wsText.textContent = 'LIVE';
+};
+ws.onclose = () => {
+    badge.classList.remove('connected');
+    wsText.textContent = 'DISCONNECTED';
 };
 
-resize();
-renderCoins();
-loadHistory('1d');
+ws.onmessage = (event) => {
+    const d = JSON.parse(event.data);
+    const s = d.s.toLowerCase();
+    const p = parseFloat(d.c);
+    const P = parseFloat(d.P);
+    const isUp   = P >= 0;
+    const dirCls = isUp ? 'up' : 'down';
+    const pctStr = (isUp ? '+' : '') + P.toFixed(2) + '%';
+
+    const mPrice = document.getElementById(`menu-price-${s}`);
+    const mPct   = document.getElementById(`menu-pct-${s}`);
+    if (mPrice) {
+        mPrice.textContent = fmtPrice(p);
+        mPrice.className   = `item-price ${dirCls}`;
+        mPct.textContent   = pctStr;
+        mPct.className     = `item-pct ${dirCls}`;
+    }
+
+    if (s !== currentCoin.s) return;
+
+    const priceEl = document.getElementById('display-price');
+    const prev    = lastPrices[s];
+    priceEl.textContent = fmtPrice(p);
+    priceEl.className   = `main-price ${dirCls}`;
+
+    if (prev !== undefined) {
+        priceEl.classList.remove('flash-up','flash-down');
+        void priceEl.offsetWidth; 
+        priceEl.classList.add(p >= prev ? 'flash-up' : 'flash-down');
+    }
+    lastPrices[s] = p;
+
+    const changeEl = document.getElementById('display-change');
+    changeEl.textContent = pctStr;
+    changeEl.className   = `stat-val ${dirCls}`;
+
+    document.getElementById('display-high').textContent = fmtPrice(parseFloat(d.h));
+    document.getElementById('display-low').textContent  = fmtPrice(parseFloat(d.l));
+    document.getElementById('display-vol').textContent  = fmtVol(parseFloat(d.q));
+};
+
+/* ─── Initial chart load ─── */
+loadChart(currentCoin.tv, currentInterval);

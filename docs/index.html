@@ -3,53 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO LIVE HTS</title>
+    <title>CRYPTEX — Live Markets</title>
+
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="shell">
-        <header>
-            <div class="h-left">
-                <div class="symbol-box" id="symbol-btn">
-                    <span id="display-symbol">BTC / USDT</span> 
-                    <span class="arrow">▼</span>
-                    <div class="dropdown" id="dropdown">
-                        <div class="search-area" onclick="event.stopPropagation()">
-                            <input type="text" id="coinSearch" placeholder="코인 검색 (BTC, ETH...)" oninput="filterCoins()">
-                        </div>
-                        <div id="coinList" class="coin-list"></div>
-                    </div>
-                </div>
-                <div class="price-area">
-                    <span id="display-price" class="p-val">0.00</span>
-                    <span id="display-change" class="p-chg">0.00%</span>
-                </div>
-            </div>
 
-            <div class="h-right">
-                <div class="iv-tabs">
-                    <button class="iv-btn" onclick="changeInterval('1m')">1m</button>
-                    <button class="iv-btn" onclick="changeInterval('5m')">5m</button>
-                    <button class="iv-btn" onclick="changeInterval('15m')">15m</button>
-                    <button class="iv-btn" onclick="changeInterval('1h')">1H</button>
-                    <button class="iv-btn" onclick="changeInterval('4h')">4H</button>
-                    <button class="iv-btn active" onclick="changeInterval('1d')">1D</button>
-                    <button class="iv-btn" onclick="changeInterval('1w')">1W</button>
-                </div>
-                <div class="ws-status">
-                    <div class="pulse-dot"></div>
-                    <span>LIVE CONNECTED</span>
-                </div>
+        <header>
+            <div class="logo">CRYPTEX <span>PRO</span></div>
+            <div class="ws-badge" id="ws-badge">
+                <div class="ws-dot" id="ws-dot"></div>
+                <span id="ws-text">CONNECTING...</span>
             </div>
         </header>
 
-        <main class="main-content">
-            <canvas id="mainLayer"></canvas>
-            <canvas id="uiLayer"></canvas>
-            <div id="loader" class="loader">SYNCHRONIZING...</div>
-        </main>
+        <div class="ticker-bar">
+
+            <div class="symbol-selector" id="symbol-btn">
+                <div class="current-symbol">
+                    <div class="sym-icon" id="sym-icon">
+                        <img src="https://assets.coingecko.com/coins/images/1/small/bitcoin.png" alt="BTC">
+                    </div>
+                    <div class="sym-texts">
+                        <div class="sym-pair" id="display-symbol">BTC / USDT</div>
+                        <div class="sym-label">PERPETUAL</div>
+                    </div>
+                    <i class="fas fa-chevron-down caret"></i>
+                </div>
+
+                <div class="dropdown-menu" id="dropdown">
+                    <div class="dropdown-header">Select Market</div>
+                    </div>
+            </div>
+
+            <div class="interval-group" id="interval-group">
+                <button class="interval-btn" data-iv="1"   onclick="changeInterval('1', this)">1m</button>
+                <button class="interval-btn" data-iv="3"   onclick="changeInterval('3', this)">3m</button>
+                <button class="interval-btn" data-iv="5"   onclick="changeInterval('5', this)">5m</button>
+                <button class="interval-btn" data-iv="15"  onclick="changeInterval('15', this)">15m</button>
+                <button class="interval-btn" data-iv="60"  onclick="changeInterval('60', this)">1H</button>
+                <button class="interval-btn" data-iv="240" onclick="changeInterval('240', this)">4H</button>
+                <button class="interval-btn active" data-iv="D" onclick="changeInterval('D', this)">1D</button>
+                <button class="interval-btn" data-iv="W"   onclick="changeInterval('W', this)">1W</button>
+                <button class="interval-btn" data-iv="M"   onclick="changeInterval('M', this)">1M</button>
+            </div>
+
+            <div class="price-block">
+                <div class="main-price-wrap">
+                    <div class="price-tag">Last Price</div>
+                    <div class="main-price" id="display-price">—</div>
+                </div>
+
+                <div class="vdiv"></div>
+
+                <div class="stats-row">
+                    <div class="stat-cell">
+                        <div class="stat-label">24h Change</div>
+                        <div class="stat-val" id="display-change">—</div>
+                    </div>
+                    <div class="stat-cell">
+                        <div class="stat-label">24h High</div>
+                        <div class="stat-val" id="display-high">—</div>
+                    </div>
+                    <div class="stat-cell">
+                        <div class="stat-label">24h Low</div>
+                        <div class="stat-val" id="display-low">—</div>
+                    </div>
+                    <div class="stat-cell">
+                        <div class="stat-label">24h Volume</div>
+                        <div class="stat-val" id="display-vol">—</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="chart-container">
+            <div id="tv_chart_container"></div>
+        </div>
+
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
