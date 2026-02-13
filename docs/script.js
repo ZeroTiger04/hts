@@ -1,6 +1,7 @@
 /* ══════════════════════════════════════════════
-   BINANCE STYLE HIGH-PERFORMANCE CHART
-   Technique: Double Buffering (Main Layer + UI Layer)
+   OKX REAL-TIME CHART
+   (Source: OKX API via Proxy)
+   (Optimization: Double Layer Rendering)
 ══════════════════════════════════════════════ */
 
 // DOM 요소
@@ -12,7 +13,7 @@ const elPrice = document.getElementById('displayPrice');
 const elChange = document.getElementById('displayChange');
 const elLoader = document.getElementById('loader');
 
-// 설정 (바이낸스 컬러)
+// 설정 (바이낸스 스타일 유지)
 const CONFIG = {
     up: '#0ecb81',
     down: '#f6465d',
@@ -20,31 +21,27 @@ const CONFIG = {
     grid: '#2b3139',
     text: '#848e9c',
     crosshair: '#ffffff',
-    wickWidth: 1,
-    candleSpacing: 2, // 캔들 사이 간격
-    paddingRight: 60, // 우측 가격표 영역
-    volumeHeightRatio: 0.15 // 거래량 높이 비율
+    paddingRight: 60,
+    volumeHeightRatio: 0.15
 };
 
 // 상태 변수
 let candles = [];
-let currentInterval = '1d';
+let currentInterval = '1D'; // OKX 기본값
 let width, height;
 let minPrice, maxPrice, priceRange;
 let mouseX = -1, mouseY = -1;
 
 /* ────────────────────────────────────────────────
-   1. 초기화 및 리사이징 (고해상도 대응)
+   1. 초기화 및 리사이징
 ──────────────────────────────────────────────── */
 function resize() {
     const container = mainCanvas.parentElement;
     const dpr = window.devicePixelRatio || 1;
     
-    // CSS 크기
     width = container.clientWidth;
     height = container.clientHeight;
 
-    // 실제 픽셀 크기 (선명하게)
     [mainCanvas, uiCanvas].forEach(cvs => {
         cvs.width = width * dpr;
         cvs.height = height * dpr;
@@ -52,123 +49,144 @@ function resize() {
         ctx.scale(dpr, dpr);
     });
 
-    // 리사이즈 시 다시 그리기
     if(candles.length > 0) drawMain();
 }
-
 window.addEventListener('resize', resize);
 
 /* ────────────────────────────────────────────────
-   2. 데이터 로드 (CryptoCompare Aggregate 사용)
+   2. OKX 데이터 로드 (핵심)
+   * 프록시를 통해 CORS 차단 완벽 해결
 ──────────────────────────────────────────────── */
 function changeInterval(iv) {
-    if(currentInterval === iv) return;
+    // OKX API 포맷으로 변환 (1m, 1H, 1D 등)
+    let okxIv = iv;
+    if(iv === '1h') okxIv = '1H';
+    if(iv === '4h') okxIv = '4H';
+    if(iv === '1d') okxIv = '1D';
+    if(iv === '1w') okxIv = '1W';
+
+    if(currentInterval === okxIv) return;
+    
     document.querySelectorAll('.iv-btn').forEach(b => b.classList.remove('active'));
     event.target.classList.add('active');
-    currentInterval = iv;
-    loadData(iv);
+    
+    currentInterval = okxIv;
+    loadData(okxIv);
 }
 
-function getApiUrl(iv) {
-    const base = 'https://min-api.cryptocompare.com/data/v2';
-    const limit = 200; // 화면에 꽉 차게
-    switch(iv) {
-        case '1m': return `${base}/histominute?fsym=BTC&tsym=USDT&limit=${limit}`;
-        case '15m': return `${base}/histominute?fsym=BTC&tsym=USDT&limit=${limit}&aggregate=15`;
-        case '1h': return `${base}/histohour?fsym=BTC&tsym=USDT&limit=${limit}`;
-        case '4h': return `${base}/histohour?fsym=BTC&tsym=USDT&limit=${limit}&aggregate=4`;
-        case '1d': return `${base}/histoday?fsym=BTC&tsym=USDT&limit=${limit}`;
-        case '1w': return `${base}/histoday?fsym=BTC&tsym=USDT&limit=${limit}&aggregate=7`;
-        default: return `${base}/histoday?fsym=BTC&tsym=USDT&limit=${limit}`;
-    }
-}
-
-async function loadData(iv) {
+async function loadData(bar) {
     elLoader.classList.remove('hide');
+    
+    // OKX API URL (BTC-USDT)
+    const targetUrl = `https://www.okx.com/api/v5/market/candles?instId=BTC-USDT&bar=${bar}&limit=100`;
+    // 프록시 서버를 경유 (보안 우회)
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+
     try {
-        const res = await fetch(getApiUrl(iv));
+        const res = await fetch(proxyUrl);
         const json = await res.json();
-        const data = json.Data.Data;
         
-        candles = data.map(d => ({
-            time: d.time, open: d.open, high: d.high, low: d.low, close: d.close, volume: d.volumeto
+        if (json.code !== '0') throw new Error(json.msg);
+
+        // OKX 데이터 포맷: [ts, o, h, l, c, vol, ...] (문자열로 옴)
+        // 최신순으로 오기 때문에 reverse() 필요
+        const rawData = json.data.reverse();
+
+        candles = rawData.map(d => ({
+            time: parseInt(d[0]),
+            open: parseFloat(d[1]),
+            high: parseFloat(d[2]),
+            low: parseFloat(d[3]),
+            close: parseFloat(d[4]),
+            volume: parseFloat(d[5])
         }));
         
-        updateTickerUI(candles[candles.length-1]);
+        // UI 업데이트
+        const last = candles[candles.length - 1];
+        updateTickerUI(last); // 가격 표시
+        
         elLoader.classList.add('hide');
-        drawMain(); // 데이터 로드 후 메인 차트 그리기
+        drawMain();
+
     } catch(e) {
-        console.error(e);
-        elLoader.innerText = "Error Loading Data";
+        console.error("OKX Load Error:", e);
+        elLoader.innerText = "OKX 접속 실패 (잠시 후 재시도)";
+        // 실패 시 재시도 로직 (3초 뒤)
+        setTimeout(() => loadData(bar), 3000);
     }
 }
 
-// 실시간 가격 (2초 폴링)
+// 실시간 가격 (Ticker)
 async function fetchTicker() {
     try {
-        const res = await fetch('https://min-api.cryptocompare.com/data/pricemultifull?fsyms=BTC&tsyms=USDT');
-        const json = await res.json();
-        const raw = json.RAW.BTC.USDT;
+        const targetUrl = 'https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT';
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
         
+        const res = await fetch(proxyUrl);
+        const json = await res.json();
+        const ticker = json.data[0];
+        
+        const currentPrice = parseFloat(ticker.last);
+        
+        // 차트 마지막 캔들 업데이트
         if(candles.length > 0) {
-            let last = candles[candles.length-1];
-            last.close = raw.PRICE;
-            if(raw.PRICE > last.high) last.high = raw.PRICE;
-            if(raw.PRICE < last.low) last.low = raw.PRICE;
+            let last = candles[candles.length - 1];
             
-            updateTickerUI(last, raw.CHANGEPCT24HOUR);
-            drawMain(); // 가격 변동 시 메인 차트 갱신
+            // 가격 반영
+            last.close = currentPrice;
+            if(currentPrice > last.high) last.high = currentPrice;
+            if(currentPrice < last.low) last.low = currentPrice;
+            
+            // 24시간 변동률 계산 (OKX는 open24h 제공)
+            const open24h = parseFloat(ticker.open24h);
+            const changePct = ((currentPrice - open24h) / open24h) * 100;
+
+            updateTickerUI(last, changePct);
+            drawMain(); // 차트 갱신
         }
-    } catch(e) {}
+    } catch(e) {
+        // 조용히 실패
+    }
 }
 
 /* ────────────────────────────────────────────────
-   3. 메인 레이어 그리기 (캔들, 그리드) - 무거운 작업
+   3. 메인 레이어 (캔들 차트)
 ──────────────────────────────────────────────── */
 function drawMain() {
     if(candles.length === 0) return;
 
-    // 1. 화면 클리어
+    // 초기화
     ctxMain.fillStyle = CONFIG.bg;
     ctxMain.fillRect(0, 0, width, height);
 
-    // 2. 스케일 계산
-    const chartH = height; // 전체 높이 사용
-    const candleW = (width - CONFIG.paddingRight) / candles.length; // 캔들 너비 자동 계산
-    const gap = 1; // 캔들 사이 틈
-    const realW = Math.max(1, candleW - gap);
+    // 스케일 계산
+    const candleW = (width - CONFIG.paddingRight) / candles.length;
+    const realW = Math.max(1, candleW - 1);
 
-    // Min/Max 계산
     minPrice = Infinity; maxPrice = -Infinity;
     let maxVol = 0;
+    
     candles.forEach(c => {
         if(c.low < minPrice) minPrice = c.low;
         if(c.high > maxPrice) maxPrice = c.high;
         if(c.volume > maxVol) maxVol = c.volume;
     });
     
-    // 위아래 여백 10%
-    const padding = (maxPrice - minPrice) * 0.1;
+    const padding = (maxPrice - minPrice) * 0.15;
     minPrice -= padding; maxPrice += padding;
     priceRange = maxPrice - minPrice;
 
-    // 3. 그리드 그리기
+    // 그리드
     ctxMain.strokeStyle = CONFIG.grid;
     ctxMain.lineWidth = 1;
     ctxMain.beginPath();
-    // 가로선 5개
     for(let i=1; i<6; i++) {
         let y = (height / 6) * i;
         ctxMain.moveTo(0, y); ctxMain.lineTo(width, y);
     }
-    // 세로선 (대략)
-    for(let i=1; i<6; i++) {
-        let x = ((width - CONFIG.paddingRight) / 6) * i;
-        ctxMain.moveTo(x, 0); ctxMain.lineTo(x, height);
-    }
     ctxMain.stroke();
 
-    // 4. 캔들 & 거래량 그리기
+    // 캔들 그리기
     candles.forEach((c, i) => {
         const x = i * candleW;
         const yOpen = height - ((c.open - minPrice) / priceRange) * height;
@@ -182,96 +200,88 @@ function drawMain() {
         ctxMain.fillStyle = color;
         ctxMain.strokeStyle = color;
 
-        // 거래량 (하단에 깔기)
+        // 거래량
         const volH = (c.volume / maxVol) * (height * CONFIG.volumeHeightRatio);
-        ctxMain.globalAlpha = 0.15; // 투명하게
+        ctxMain.globalAlpha = 0.2;
         ctxMain.fillRect(x, height - volH, realW, volH);
         ctxMain.globalAlpha = 1.0;
 
-        // 캔들 꼬리 (Wick)
+        // 꼬리
         ctxMain.beginPath();
         ctxMain.moveTo(x + realW/2, yHigh);
         ctxMain.lineTo(x + realW/2, yLow);
         ctxMain.stroke();
 
-        // 캔들 몸통 (Body)
+        // 몸통
         let bodyH = Math.abs(yClose - yOpen);
-        if(bodyH < 1) bodyH = 1; // 최소 높이 보장
+        if(bodyH < 1) bodyH = 1;
         ctxMain.fillRect(x, Math.min(yOpen, yClose), realW, bodyH);
     });
 
-    // 5. 현재가 표시 (우측 라벨)
-    const last = candles[candles.length-1];
+    // 현재가 라인
+    const last = candles[candles.length - 1];
     const yLast = height - ((last.close - minPrice) / priceRange) * height;
     
-    // 점선
     ctxMain.strokeStyle = '#fff';
     ctxMain.setLineDash([2, 2]);
-    ctxMain.beginPath();
-    ctxMain.moveTo(0, yLast);
-    ctxMain.lineTo(width, yLast);
-    ctxMain.stroke();
-    ctxMain.setLineDash([]);
+    ctxMain.beginPath(); ctxMain.moveTo(0, yLast); ctxMain.lineTo(width, yLast); ctxMain.stroke(); ctxMain.setLineDash([]);
 
-    // 가격표 배경
-    ctxMain.fillStyle = last.close >= last.open ? CONFIG.up : CONFIG.down;
+    // 우측 가격표
+    const isUp = last.close >= last.open;
+    ctxMain.fillStyle = isUp ? CONFIG.up : CONFIG.down;
     ctxMain.fillRect(width - CONFIG.paddingRight, yLast - 10, CONFIG.paddingRight, 20);
-    
-    // 가격 텍스트
-    ctxMain.fillStyle = '#fff';
-    ctxMain.font = '11px Arial';
+    ctxMain.fillStyle = '#fff'; ctxMain.font = 'bold 11px Arial';
     ctxMain.fillText(last.close.toLocaleString('en-US', {minimumFractionDigits:2}), width - CONFIG.paddingRight + 4, yLast + 4);
 }
 
 /* ────────────────────────────────────────────────
-   4. UI 레이어 그리기 (마우스 인터랙션) - 가벼운 작업
+   4. UI 레이어 (마우스 인터랙션)
 ──────────────────────────────────────────────── */
 function drawUI() {
-    // UI 레이어 클리어 (이것만 지우고 다시 그림 -> 렉 없음!)
     ctxUI.clearRect(0, 0, width, height);
-
     if(mouseX < 0 || mouseX > width - CONFIG.paddingRight) return;
 
-    // 1. 십자선
-    ctxUI.strokeStyle = '#76808f';
+    ctxUI.strokeStyle = '#999';
     ctxUI.setLineDash([4, 4]);
-    ctxUI.lineWidth = 1;
     
-    // 세로
+    // 십자선
     ctxUI.beginPath(); ctxUI.moveTo(mouseX, 0); ctxUI.lineTo(mouseX, height); ctxUI.stroke();
-    // 가로
     ctxUI.beginPath(); ctxUI.moveTo(0, mouseY); ctxUI.lineTo(width, mouseY); ctxUI.stroke();
     ctxUI.setLineDash([]);
 
-    // 2. 가격 라벨 (우측 Y축)
+    // 우측 가격 라벨
     const hoverPrice = minPrice + ((height - mouseY) / height) * priceRange;
-    
     ctxUI.fillStyle = '#2b3139';
     ctxUI.fillRect(width - CONFIG.paddingRight, mouseY - 10, CONFIG.paddingRight, 20);
-    
-    ctxUI.fillStyle = '#fff';
-    ctxUI.font = '11px Arial';
+    ctxUI.fillStyle = '#fff'; ctxUI.font = '11px Arial';
     ctxUI.fillText(hoverPrice.toLocaleString('en-US', {minimumFractionDigits:2}), width - CONFIG.paddingRight + 4, mouseY + 4);
 }
 
-// 이벤트 핸들링 (Throttle 없이도 가벼워서 괜찮음)
 uiCanvas.addEventListener('mousemove', e => {
     const rect = uiCanvas.getBoundingClientRect();
     mouseX = e.clientX - rect.left;
     mouseY = e.clientY - rect.top;
-    window.requestAnimationFrame(drawUI); // 부드러운 애니메이션
-});
-
-uiCanvas.addEventListener('mouseleave', () => {
-    mouseX = -1; mouseY = -1;
     window.requestAnimationFrame(drawUI);
 });
+uiCanvas.addEventListener('mouseleave', () => { mouseX = -1; mouseY = -1; window.requestAnimationFrame(drawUI); });
 
 /* ────────────────────────────────────────────────
-   5. 기타 UI 업데이트
+   5. UI 업데이트 헬퍼
 ──────────────────────────────────────────────── */
 function updateTickerUI(candle, pctChange) {
     if(!candle) return;
     elPrice.innerText = candle.close.toLocaleString('en-US', {style:'currency', currency:'USD'});
+    
     const isUp = candle.close >= candle.open;
-    elPrice.className = `current-price ${isUp ? 'text-
+    elPrice.className = `current-price ${isUp ? 'text-up' : 'text-down'}`;
+
+    if(pctChange !== undefined) {
+        elChange.innerText = (pctChange >= 0 ? '+' : '') + pctChange.toFixed(2) + '%';
+        elChange.className = `price-change ${pctChange >= 0 ? 'text-up' : 'text-down'}`;
+    }
+}
+
+// 시작
+resize();
+loadData('1D'); // OKX 일봉으로 시작
+setInterval(fetchTicker, 3000); // 3초마다 갱신
