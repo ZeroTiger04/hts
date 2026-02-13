@@ -15,10 +15,9 @@ body::before { content:''; position:fixed; inset:0; background-image:radial-grad
 
 .shell { position:relative; z-index:1; display:flex; flex-direction:column; height:100vh }
 
-/* HEADER */
+/* HEADER (로고 스타일 삭제됨) */
 header { height:44px; background:rgba(9,12,19,.95); border-bottom:1px solid var(--border-dim); display:flex; align-items:center; justify-content:space-between; padding:0 20px; flex-shrink:0 }
-.logo { font-family:var(--sans); font-weight:800; font-size:.88rem; letter-spacing:.2em; color:var(--gold); text-transform:uppercase }
-.logo span { color:var(--muted); font-weight:400 }
+/* .logo 관련 스타일 삭제됨 */
 .ws-badge { display:flex; align-items:center; gap:7px; font-family:var(--mono); font-size:.66rem; color:var(--muted); letter-spacing:.06em }
 .ws-dot { width:6px; height:6px; border-radius:50%; background:var(--dim); transition:all .4s }
 .ws-badge.on .ws-dot { background:var(--up); box-shadow:0 0 8px var(--up-a) }
