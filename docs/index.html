@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO TRADER HTS - FULL INTERVAl</title>
+    <title>PRO LIVE HTS</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="shell">
@@ -16,7 +16,7 @@
                     <span class="arrow">▼</span>
                     <div class="dropdown" id="dropdown">
                         <div class="search-area" onclick="event.stopPropagation()">
-                            <input type="text" id="coinSearch" placeholder="코인 검색..." oninput="filterCoins()">
+                            <input type="text" id="coinSearch" placeholder="코인 검색 (BTC, ETH...)" oninput="filterCoins()">
                         </div>
                         <div id="coinList" class="coin-list"></div>
                     </div>
@@ -26,19 +26,20 @@
                     <span id="display-change" class="p-chg">0.00%</span>
                 </div>
             </div>
-            
+
             <div class="h-right">
                 <div class="iv-tabs">
                     <button class="iv-btn" onclick="changeInterval('1m')">1m</button>
-                    <button class="iv-btn" onclick="changeInterval('3m')">3m</button>
                     <button class="iv-btn" onclick="changeInterval('5m')">5m</button>
                     <button class="iv-btn" onclick="changeInterval('15m')">15m</button>
-                    <button class="iv-btn" onclick="changeInterval('30m')">30m</button>
                     <button class="iv-btn" onclick="changeInterval('1h')">1H</button>
                     <button class="iv-btn" onclick="changeInterval('4h')">4H</button>
                     <button class="iv-btn active" onclick="changeInterval('1d')">1D</button>
                     <button class="iv-btn" onclick="changeInterval('1w')">1W</button>
-                    <button class="iv-btn" onclick="changeInterval('1M')">1M</button>
+                </div>
+                <div class="ws-status">
+                    <div class="pulse-dot"></div>
+                    <span>LIVE CONNECTED</span>
                 </div>
             </div>
         </header>
@@ -46,7 +47,7 @@
         <main class="main-content">
             <canvas id="mainLayer"></canvas>
             <canvas id="uiLayer"></canvas>
-            <div id="loader" class="loader">CONNECTING TO MARKET...</div>
+            <div id="loader" class="loader">SYNCHRONIZING...</div>
         </main>
     </div>
     <script src="script.js"></script>
