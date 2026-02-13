@@ -1,0 +1,129 @@
+:root {
+    --bg-body: #0b0e11;
+    --bg-card: #161a1e;       /* 패널 배경 */
+    --bg-hover: #2b3139;      /* 호버 색상 */
+    --border: #252930;
+    --text-primary: #eaecef;
+    --text-secondary: #848e9c;
+    --text-yellow: #fcd535;
+    --up: #0ecb81;
+    --down: #f6465d;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0; padding: 0;
+    background-color: var(--bg-body);
+    color: var(--text-primary);
+    font-family: "Binance Plex", Arial, sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 1. 최상단 글로벌 헤더 */
+header {
+    height: 40px;
+    background-color: #181a20;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    justify-content: flex-end; /* 오른쪽 정렬 */
+    z-index: 100;
+}
+
+/* 2. 정보 표시줄 (Ticker Bar) */
+.ticker-bar {
+    height: 60px;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 20px;
+    position: relative;
+}
+
+/* 3. 종목 선택 드롭다운 */
+.symbol-selector {
+    position: relative;
+    cursor: pointer;
+}
+
+.current-symbol {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.current-symbol:hover { color: var(--text-yellow); }
+.current-symbol i { font-size: 0.8rem; color: var(--text-secondary); }
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 10px;
+    width: 350px;
+    background-color: #1e2329;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    z-index: 999;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.dropdown-menu.show { display: block; }
+
+.menu-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #252930;
+}
+.menu-item:hover { background-color: var(--bg-hover); }
+
+.item-left { display: flex; flex-direction: column; }
+.item-symbol { font-weight: bold; font-size: 0.95rem; }
+.item-name { font-size: 0.75rem; color: var(--text-secondary); }
+
+.item-right { text-align: right; }
+.item-price { font-family: 'Roboto', sans-serif; font-weight: 500; }
+
+.main-price-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.main-price { font-size: 1.4rem; font-weight: bold; color: var(--up); font-family: 'Roboto', sans-serif;}
+
+.stat-group {
+    display: flex;
+    gap: 20px;
+}
+.stat-box { display: flex; flex-direction: column; font-size: 0.75rem; color: var(--text-secondary); }
+.stat-val { font-size: 0.8rem; color: var(--text-primary); margin-top: 3px; }
+
+.c-up { color: var(--up); }
+.c-down { color: var(--down); }
+
+/* 4. 차트 영역 */
+.chart-container {
+    flex: 1;
+    background-color: var(--bg-body);
+    position: relative;
+}
+
+#tv_chart_container {
+    width: 100%;
+    height: 100%;
+}

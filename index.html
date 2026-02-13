@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Dashboard Pro</title>
+    
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div style="font-size:0.75rem; color:#848e9c;">
+            <i class="fas fa-circle" style="color: #0ecb81; font-size: 0.5rem; vertical-align: middle; margin-right: 5px;"></i>
+            WebSocket Connected
+        </div>
+    </header>
+
+    <div class="ticker-bar">
+        <div class="symbol-selector" id="symbol-btn">
+            <div class="current-symbol">
+                <span id="display-symbol">BTC/USDT</span> 
+                <i class="fas fa-caret-down"></i>
+            </div>
+            <div class="dropdown-menu" id="dropdown"></div>
+        </div>
+
+        <div class="main-price-info">
+            <div class="main-price" id="display-price">0.00</div>
+            <div class="stat-group">
+                <div class="stat-box">
+                    <span>24h Change</span>
+                    <span class="stat-val" id="display-change">0.00%</span>
+                </div>
+                <div class="stat-box">
+                    <span>24h High</span>
+                    <span class="stat-val" id="display-high">0.00</span>
+                </div>
+                <div class="stat-box">
+                    <span>24h Low</span>
+                    <span class="stat-val" id="display-low">0.00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <div id="tv_chart_container"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
