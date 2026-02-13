@@ -186,21 +186,29 @@ function updateCandle(k) {
   const rd=calcRSI(candleData,14); if(rd.length) rsiSeries.update(rd[rd.length-1]);
 }
 
-// Binance API 호출
+// Binance API 호출 (수정된 부분)
 async function fetchKlines(symbol, interval, limit=600) {
-  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const raw = await res.json();
-  if (!Array.isArray(raw) || raw.length===0) throw new Error('빈 데이터');
-  return raw.map(k=>({
-    time:  Math.floor(k[0]/1000),
-    open:  parseFloat(k[1]),
-    high:  parseFloat(k[2]),
-    low:   parseFloat(k[3]),
-    close: parseFloat(k[4]),
-    volume:parseFloat(k[5]),
-  }));
+  // CORS 에러 방지를 위해 data-api.binance.vision 사용
+  const url = `https://data-api.binance.vision/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  
+  try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const raw = await res.json();
+      if (!Array.isArray(raw) || raw.length===0) throw new Error('빈 데이터');
+      
+      return raw.map(k=>({
+        time:  Math.floor(k[0]/1000),
+        open:  parseFloat(k[1]),
+        high:  parseFloat(k[2]),
+        low:   parseFloat(k[3]),
+        close: parseFloat(k[4]),
+        volume:parseFloat(k[5]),
+      }));
+  } catch (err) {
+      console.error("Fetch Error:", err);
+      throw err;
+  }
 }
 
 async function loadData(coin, interval) {
