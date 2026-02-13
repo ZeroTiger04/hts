@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════
-   PRO MULTI-CHART ENGINE v2 (Final)
-   Optimization: Double-Layer Canvas + Stable Proxy
+   PRO MULTI-CHART v3 (Ultimate Connectivity)
+   Features: Multi-Proxy Fallback + Demo Mode
 ══════════════════════════════════════════════ */
 
 const mainCanvas = document.getElementById('mainLayer');
@@ -14,8 +14,15 @@ const elCoin = document.getElementById('coinSelect');
 
 const CONFIG = {
     up: '#0ecb81', down: '#f6465d', bg: '#161a1e',
-    grid: '#2b3139', paddingRight: 70, volRatio: 0.15
+    grid: '#2b3139', paddingRight: 75, volRatio: 0.15
 };
+
+// 사용할 우회 서버 목록 (하나가 막히면 다음 것을 시도)
+const PROXIES = [
+    (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    (url) => url // 마지막은 직접 시도
+];
 
 let candles = [];
 let currentInterval = '1d';
@@ -23,6 +30,7 @@ let currentSymbol = 'BTCUSDT';
 let width, height, minP, maxP, pRange;
 let mouseX = -1, mouseY = -1;
 let tickerTimer = null;
+let proxyIdx = 0; // 현재 사용 중인 프록시 인덱스
 
 function resize() {
     const dpr = window.devicePixelRatio || 1;
@@ -49,36 +57,74 @@ function changeInterval(iv) {
     loadHistory(iv);
 }
 
-// [데이터] 프록시를 사용한 바이낸스 데이터 로드
+// [데이터 로드] 프록시를 순차적으로 시도하는 핵심 함수
 async function loadHistory(interval) {
     elLoader.classList.remove('hide');
+    elLoader.innerText = `CONNECTING ${currentSymbol}... (Try ${proxyIdx + 1})`;
+    
     const binanceUrl = `https://api.binance.com/api/v3/klines?symbol=${currentSymbol}&interval=${interval}&limit=180`;
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(binanceUrl)}`;
+    const requestUrl = PROXIES[proxyIdx](binanceUrl);
 
     try {
-        const res = await fetch(proxyUrl);
+        const res = await fetch(requestUrl);
+        if(!res.ok) throw new Error("Fetch Failed");
         const data = await res.json();
+
         candles = data.map(d => ({
             time: d[0], open: parseFloat(d[1]), high: parseFloat(d[2]),
             low: parseFloat(d[3]), close: parseFloat(d[4]), volume: parseFloat(d[5])
         }));
+        
         elLoader.classList.add('hide');
+        proxyIdx = 0; // 성공 시 인덱스 초기화
         drawMain();
-        startTicker(); // 실시간 갱신 시작
+        startTicker(); 
     } catch(e) {
-        elLoader.innerText = "DATA RETRYING...";
-        setTimeout(() => loadHistory(interval), 3000);
+        console.warn(`Proxy ${proxyIdx} failed. trying next...`);
+        proxyIdx++;
+        
+        if (proxyIdx < PROXIES.length) {
+            // 다음 프록시로 즉시 재시도
+            loadHistory(interval);
+        } else {
+            // 모든 프록시 실패 시 데모 데이터 가동 (무한 로딩 방지)
+            proxyIdx = 0; 
+            elLoader.innerText = "LOCAL DEMO MODE (Network Blocked)";
+            setupDemoData();
+            setTimeout(() => elLoader.classList.add('hide'), 2000);
+        }
     }
 }
 
-// [실시간] 3초마다 가격 갱신 (폴링)
+// 모든 네트워크 차단 시 실행되는 데모 로직
+function setupDemoData() {
+    let price = 50000;
+    const now = Date.now();
+    candles = Array.from({length: 150}, (_, i) => {
+        const move = (Math.random() - 0.5) * 500;
+        const open = price;
+        const close = price + move;
+        price = close;
+        return {
+            time: now - (150 - i) * 60000,
+            open, close, 
+            high: Math.max(open, close) + Math.random() * 200,
+            low: Math.min(open, close) - Math.random() * 200,
+            volume: Math.random() * 1000
+        };
+    });
+    drawMain();
+    updateTickerUI(candles[candles.length-1], 1.23);
+}
+
+// [실시간] 시세 갱신
 function startTicker() {
     if(tickerTimer) clearInterval(tickerTimer);
     tickerTimer = setInterval(async () => {
         const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${currentSymbol}`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const requestUrl = PROXIES[0](url); // 티커는 첫 번째 프록시만 시도
         try {
-            const res = await fetch(proxyUrl);
+            const res = await fetch(requestUrl);
             const d = await res.json();
             if(candles.length > 0) {
                 let last = candles[candles.length - 1];
@@ -89,7 +135,7 @@ function startTicker() {
                 drawMain();
             }
         } catch(e) {}
-    }, 3000);
+    }, 4000);
 }
 
 // [렌더링] 메인 레이어 (캔들, 그리드)
@@ -105,12 +151,10 @@ function drawMain() {
     const padding = (maxP - minP) * 0.15;
     minP -= padding; maxP += padding; pRange = maxP - minP;
 
-    // 그리드
     ctxMain.strokeStyle = CONFIG.grid; ctxMain.lineWidth = 1; ctxMain.beginPath();
     for(let i=1; i<6; i++) { let y = (height/6)*i; ctxMain.moveTo(0,y); ctxMain.lineTo(width,y); }
     ctxMain.stroke();
 
-    // 캔들 & 거래량
     candles.forEach((c, i) => {
         const x = i * candleW;
         const yOpen = height - ((c.open - minP) / pRange) * height;
@@ -127,7 +171,6 @@ function drawMain() {
         ctxMain.fillRect(x, Math.min(yOpen, yClose), realW, bodyH);
     });
 
-    // 현재가 표시
     const last = candles[candles.length - 1];
     const yLast = height - ((last.close - minP) / pRange) * height;
     ctxMain.strokeStyle = '#fff'; ctxMain.setLineDash([2, 2]); ctxMain.beginPath();
@@ -144,7 +187,7 @@ function drawUI() {
     if(mouseX < 0 || mouseX > width - CONFIG.paddingRight) return;
     ctxUI.strokeStyle = '#999'; ctxUI.setLineDash([4, 4]);
     ctxUI.beginPath(); ctxUI.moveTo(mouseX, 0); ctxUI.lineTo(mouseX, height); ctxUI.stroke();
-    ctxUI.beginPath(); ctxUI.moveTo(0, mouseY); ctxUI.lineTo(width, mouseY); ctxUI.stroke();
+    ctxUI.beginPath(); ctxUI.moveTo(0, mouseY); ctxUI.lineTo(width, mouseY); ctxUI.stroke(); ctxUI.setLineDash([]);
     const hoverP = minP + ((height - mouseY) / height) * pRange;
     ctxUI.fillStyle = '#2b3139'; ctxUI.fillRect(width - CONFIG.paddingRight, mouseY - 10, CONFIG.paddingRight, 20);
     ctxUI.fillStyle = '#fff'; ctxUI.font = '11px Arial';
