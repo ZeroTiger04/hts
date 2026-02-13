@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO MULTI-CHART v2</title>
+    <title>PRO TRADER | TV + BINANCE</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
 </head>
@@ -16,38 +16,44 @@
                     <option value="ETHUSDT">ETH / USDT</option>
                     <option value="SOLUSDT">SOL / USDT</option>
                     <option value="XRPUSDT">XRP / USDT</option>
-                    <option value="BNBUSDT">BNB / USDT</option>
                     <option value="DOGEUSDT">DOGE / USDT</option>
-                    <option value="ADAUSDT">ADA / USDT</option>
-                    <option value="LINKUSDT">LINK / USDT</option>
                 </select>
-                <div class="price-wrap">
-                    <span class="current-price" id="displayPrice">Loading...</span>
-                    <span class="price-change" id="displayChange">0.00%</span>
+                <div class="header-stats">
+                    <div class="stat-item">
+                        <span class="label">Last Price</span>
+                        <span class="value" id="displayPrice">Loading...</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">24h Change</span>
+                        <span class="value" id="displayChange">0.00%</span>
+                    </div>
+                    <div class="stat-item hide-mobile">
+                        <span class="label">24h High</span>
+                        <span class="value" id="displayHigh">0.00</span>
+                    </div>
+                    <div class="stat-item hide-mobile">
+                        <span class="label">24h Low</span>
+                        <span class="value" id="displayLow">0.00</span>
+                    </div>
                 </div>
             </div>
 
             <div class="intervals">
                 <button class="iv-btn" onclick="changeInterval('1m')">1m</button>
-                <button class="iv-btn" onclick="changeInterval('3m')">3m</button>
                 <button class="iv-btn" onclick="changeInterval('5m')">5m</button>
                 <button class="iv-btn" onclick="changeInterval('15m')">15m</button>
                 <button class="iv-btn" onclick="changeInterval('1h')">1H</button>
-                <button class="iv-btn" onclick="changeInterval('4h')">4H</button>
                 <button class="iv-btn active" onclick="changeInterval('1d')">1D</button>
                 <button class="iv-btn" onclick="changeInterval('1w')">1W</button>
-                <button class="iv-btn" onclick="changeInterval('1M')">1M</button>
             </div>
         </header>
 
         <div class="chart-container">
             <canvas id="mainLayer"></canvas>
             <canvas id="uiLayer"></canvas>
-            
-            <div id="loader" class="loader">CONNECTING TO GLOBAL MARKET...</div>
+            <div id="loader" class="loader">SYNCHRONIZING...</div>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
