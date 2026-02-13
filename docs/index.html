@@ -3,41 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FULL-SCREEN PRO CHART</title>
+    <title>HTS PRO - FULL SCREEN</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="data:,">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="shell">
         <header>
-            <div class="header-left">
-                <div class="symbol-selector" id="symbol-btn">
-                    <div class="current-symbol">
-                        <span id="display-symbol">BTC / USDT</span> 
-                        <span class="arrow">▼</span>
-                    </div>
-                    <div class="dropdown-menu" id="dropdown">
-                        <div class="search-box" onclick="event.stopPropagation()">
-                            <input type="text" id="coinSearch" placeholder="코인 검색 (예: BTC, SOL)" oninput="filterCoins()">
+            <div class="h-left">
+                <div class="symbol-box" id="symbol-btn">
+                    <span id="display-symbol">BTC / USDT</span> 
+                    <span class="arrow">▼</span>
+                    <div class="dropdown" id="dropdown">
+                        <div class="search-area" onclick="event.stopPropagation()">
+                            <input type="text" id="coinSearch" placeholder="코인 검색..." oninput="filterCoins()">
                         </div>
                         <div id="coinList" class="coin-list"></div>
                     </div>
                 </div>
-                
-                <div class="price-wrap">
-                    <span class="main-price" id="display-price">0.00</span>
-                    <span class="main-change" id="display-change">0.00%</span>
-                </div>
-
-                <div class="stats-grid hide-mobile">
-                    <div class="stat-item"><span class="label">HIGH</span><span class="val" id="display-high">0.00</span></div>
-                    <div class="stat-item"><span class="label">LOW</span><span class="val" id="display-low">0.00</span></div>
+                <div class="price-area">
+                    <span id="display-price" class="p-val">0.00</span>
+                    <span id="display-change" class="p-chg">0.00%</span>
                 </div>
             </div>
-
-            <div class="header-right">
-                <div class="interval-group">
+            <div class="h-right">
+                <div class="iv-tabs">
                     <button class="iv-btn" onclick="changeInterval('1m')">1m</button>
                     <button class="iv-btn" onclick="changeInterval('15m')">15m</button>
                     <button class="iv-btn" onclick="changeInterval('1h')">1H</button>
@@ -46,10 +36,10 @@
             </div>
         </header>
 
-        <main class="chart-container">
+        <main class="main-content">
             <canvas id="mainLayer"></canvas>
             <canvas id="uiLayer"></canvas>
-            <div id="loader" class="loader">CONNECTING...</div>
+            <div id="loader" class="loader">CONNECTING TO MARKET...</div>
         </main>
     </div>
     <script src="script.js"></script>
