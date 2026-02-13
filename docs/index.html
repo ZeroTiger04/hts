@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BINANCE STYLE CHART</title>
+    <title>PRO CHART - TV DATA</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,29 +11,31 @@
         <header>
             <div class="pair-info">
                 <h1 class="symbol">BTC/USDT</h1>
-                <span class="sub-text">Perpetual</span>
+                <span class="sub-text">Binance Data</span>
             </div>
             
             <div class="price-info">
-                <span class="current-price" id="displayPrice">0.00</span>
+                <span class="current-price" id="displayPrice">Loading...</span>
                 <span class="price-change" id="displayChange">0.00%</span>
             </div>
 
             <div class="intervals">
                 <button class="iv-btn" onclick="changeInterval('1m')">1m</button>
+                <button class="iv-btn" onclick="changeInterval('3m')">3m</button>
+                <button class="iv-btn" onclick="changeInterval('5m')">5m</button>
                 <button class="iv-btn" onclick="changeInterval('15m')">15m</button>
                 <button class="iv-btn" onclick="changeInterval('1h')">1H</button>
                 <button class="iv-btn" onclick="changeInterval('4h')">4H</button>
                 <button class="iv-btn active" onclick="changeInterval('1d')">1D</button>
                 <button class="iv-btn" onclick="changeInterval('1w')">1W</button>
+                <button class="iv-btn" onclick="changeInterval('1M')">1M</button>
             </div>
         </header>
 
         <div class="chart-container">
             <canvas id="mainLayer"></canvas>
             <canvas id="uiLayer"></canvas>
-            
-            <div id="loader" class="loader">LOADING DATA...</div>
+            <div id="loader" class="loader">CONNECTING TO BINANCE...</div>
         </div>
     </div>
 
