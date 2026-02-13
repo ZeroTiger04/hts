@@ -1,6 +1,7 @@
 /* ══════════════════════════════════════════════
-   ZERO-DEPENDENCY PRO CHART ENGINE
-   (TradingView 스타일 렌더링 + 마우스 인터랙션)
+   ZERO-DEPENDENCY GLOBAL CHART
+   (Source: CryptoCompare / Pair: BTC-USDT)
+   (Mode: HTTP Polling / Global Colors)
 ══════════════════════════════════════════════ */
 
 const canvas = document.getElementById('chartCanvas');
@@ -9,14 +10,13 @@ const elPrice = document.getElementById('price');
 const elChange = document.getElementById('change');
 const elInfo = document.getElementById('crosshairInfo');
 
-// 차트 설정
+// 차트 설정 (해외 표준)
 const CONFIG = {
-    upColor: '#0ecb81',
-    downColor: '#f6465d',
+    upColor: '#0ecb81',    // 상승: 초록 (해외 표준)
+    downColor: '#f6465d',  // 하락: 빨강 (해외 표준)
     bgColor: '#0b0e11',
     gridColor: '#1e2329',
     crosshairColor: '#ffffff',
-    textColor: '#848e9c',
     candleWidth: 8,
     spacing: 4
 };
@@ -25,53 +25,101 @@ const CONFIG = {
 let candles = [];
 let width, height;
 let mouseX = -1, mouseY = -1;
-let lastPrice = 65000;
+
+// 헬퍼: 달러 포맷 ($ 65,000.00)
+const fmtUSD = (num) => {
+    return '$ ' + num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+};
 
 /* ────────────────────────────────────────────────
-   1. 데이터 생성 (가짜 데이터지만 리얼하게)
+   1. 해외 데이터 가져오기 (CryptoCompare)
+   * 방화벽 우회 가능성이 높음 (정보 사이트로 분류)
 ──────────────────────────────────────────────── */
-function initData() {
-    let price = 65000;
-    for (let i = 0; i < 150; i++) {
-        let move = (Math.random() - 0.5) * 300;
-        let open = price;
-        let close = price + move;
-        let high = Math.max(open, close) + Math.random() * 150;
-        let low = Math.min(open, close) - Math.random() * 150;
-        let volume = Math.random() * 1000 + 500;
-        
-        candles.push({ open, close, high, low, volume, time: i });
-        price = close;
+async function fetchHistory() {
+    // BTC -> USDT (1시간봉 데이터)
+    // histohour: 1시간봉, histominute: 1분봉
+    const url = 'https://min-api.cryptocompare.com/data/v2/histohour?fsym=BTC&tsym=USDT&limit=100';
+    
+    try {
+        const res = await fetch(url);
+        const json = await res.json();
+
+        if (json.Response === 'Error') throw new Error(json.Message);
+
+        const rawData = json.Data.Data;
+
+        // 데이터 변환
+        candles = rawData.map(d => ({
+            time: d.time, 
+            open: d.open,
+            high: d.high,
+            low: d.low,
+            close: d.close,
+            volume: d.volumeto
+        }));
+
+        draw(); 
+        updateUI(candles[candles.length - 1]);
+
+    } catch (e) {
+        console.error("해외 데이터 로드 실패:", e);
+        // 실패 시 UI에 표시
+        elPrice.innerText = "OFFLINE";
     }
-    updateUI();
+}
+
+// 실시간 가격 조회 (2초마다)
+async function fetchTicker() {
+    try {
+        const url = 'https://min-api.cryptocompare.com/data/pricemultifull?fsyms=BTC&tsyms=USDT';
+        const res = await fetch(url);
+        const json = await res.json();
+        
+        const raw = json.RAW.BTC.USDT;
+        const currentPrice = raw.PRICE;
+        
+        // 차트 마지막 캔들 업데이트
+        if(candles.length > 0) {
+            let last = candles[candles.length - 1];
+            last.close = currentPrice;
+            if(currentPrice > last.high) last.high = currentPrice;
+            if(currentPrice < last.low) last.low = currentPrice;
+            
+            draw();
+            updateUI_Ticker(raw);
+        }
+
+    } catch (e) {
+        console.error("티커 조회 실패");
+    }
 }
 
 /* ────────────────────────────────────────────────
-   2. 차트 그리기 엔진 (매 프레임 호출)
+   2. 차트 그리기 엔진 (HTML5 Canvas)
+   * 수정사항: Y축 자동 스케일링 강화
 ──────────────────────────────────────────────── */
 function draw() {
-    // 1. 캔버스 크기 맞춤 (레티나 디스플레이 대응 생략하고 단순화)
+    if(candles.length === 0) return;
+
     width = canvas.parentElement.clientWidth;
     height = canvas.parentElement.clientHeight;
     canvas.width = width;
     canvas.height = height;
 
-    // 2. 배경 초기화
+    // 배경
     ctx.fillStyle = CONFIG.bgColor;
     ctx.fillRect(0, 0, width, height);
 
-    // 3. 차트 영역 계산 (가격 영역: 상단 80%, 거래량: 하단 20%)
     const chartHeight = height * 0.8;
     const volHeight = height * 0.2;
-    const volY = chartHeight;
 
-    // 4. 보이는 캔들 계산
+    // 캔들 계산
     const candleFullWidth = CONFIG.candleWidth + CONFIG.spacing;
     const maxVisible = Math.ceil(width / candleFullWidth);
     const startIdx = Math.max(0, candles.length - maxVisible);
     const visibleCandles = candles.slice(startIdx);
 
-    // 5. Min/Max 계산 (스케일링용)
+    // 스케일 계산
     let minP = Infinity, maxP = -Infinity;
     let maxV = 0;
     visibleCandles.forEach(c => {
@@ -79,163 +127,104 @@ function draw() {
         if(c.high > maxP) maxP = c.high;
         if(c.volume > maxV) maxV = c.volume;
     });
-    // 여백 추가
-    const padding = (maxP - minP) * 0.1;
+    
+    // 가격 범위 여백 15% (차트가 너무 꽉 차지 않게)
+    const padding = (maxP - minP) * 0.15;
     minP -= padding; maxP += padding;
     const priceRange = maxP - minP;
 
-    // 6. 그리드 그리기
+    // 그리드
     ctx.strokeStyle = CONFIG.gridColor;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    // 가로선 4개
-    for(let i=1; i<=4; i++) {
-        let y = (chartHeight / 4) * i;
-        ctx.moveTo(0, y); ctx.lineTo(width, y);
-    }
-    // 세로선 (대략적)
-    for(let i=1; i<=6; i++) {
-        let x = (width / 6) * i;
-        ctx.moveTo(x, 0); ctx.lineTo(x, height);
-    }
+    for(let i=1; i<=4; i++) { let y = (chartHeight/4)*i; ctx.moveTo(0,y); ctx.lineTo(width,y); }
     ctx.stroke();
 
-    // 7. 캔들 & 거래량 그리기
+    // 캔들 렌더링
     visibleCandles.forEach((c, i) => {
-        // X 좌표 (오른쪽 정렬)
-        const x = width - ((visibleCandles.length - i) * candleFullWidth) - 50; 
+        const x = width - ((visibleCandles.length - i) * candleFullWidth) - 60;
         
-        // Y 좌표 변환 (가격)
         const yOpen = chartHeight - ((c.open - minP) / priceRange) * chartHeight;
         const yClose = chartHeight - ((c.close - minP) / priceRange) * chartHeight;
         const yHigh = chartHeight - ((c.high - minP) / priceRange) * chartHeight;
         const yLow = chartHeight - ((c.low - minP) / priceRange) * chartHeight;
 
-        // 색상 결정
         const isUp = c.close >= c.open;
         const color = isUp ? CONFIG.upColor : CONFIG.downColor;
 
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
 
-        // [거래량 바]
+        // 거래량 바
         const vH = (c.volume / maxV) * volHeight * 0.8;
-        ctx.globalAlpha = 0.3; // 투명도
+        ctx.globalAlpha = 0.3;
         ctx.fillRect(x - CONFIG.candleWidth/2, height - vH, CONFIG.candleWidth, vH);
         ctx.globalAlpha = 1.0;
 
-        // [캔들 꼬리]
-        ctx.beginPath();
-        ctx.moveTo(x, yHigh);
-        ctx.lineTo(x, yLow);
-        ctx.stroke();
-
-        // [캔들 몸통]
-        let bodyH = Math.abs(yClose - yOpen);
-        if(bodyH < 1) bodyH = 1;
+        // 캔들 꼬리 & 몸통
+        ctx.beginPath(); ctx.moveTo(x, yHigh); ctx.lineTo(x, yLow); ctx.stroke();
+        let bodyH = Math.abs(yClose - yOpen); if(bodyH < 1) bodyH = 1;
         ctx.fillRect(x - CONFIG.candleWidth/2, Math.min(yOpen, yClose), CONFIG.candleWidth, bodyH);
     });
 
-    // 8. 현재가 라인 (점선)
+    // 현재가 라인
     const last = candles[candles.length-1];
     const yLast = chartHeight - ((last.close - minP) / priceRange) * chartHeight;
-    
-    ctx.strokeStyle = '#ffffff';
-    ctx.setLineDash([4, 4]);
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, yLast);
-    ctx.lineTo(width, yLast);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.strokeStyle = '#fff'; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(0, yLast); ctx.lineTo(width, yLast); ctx.stroke(); ctx.setLineDash([]);
 
-    // 현재가 라벨 (오른쪽 끝)
+    // 현재가 라벨 (달러)
     ctx.fillStyle = last.close >= last.open ? CONFIG.upColor : CONFIG.downColor;
-    ctx.fillRect(width - 60, yLast - 10, 60, 20);
-    ctx.fillStyle = '#fff';
-    ctx.font = '11px Arial';
-    ctx.fillText(last.close.toFixed(2), width - 55, yLast + 4);
+    ctx.fillRect(width - 80, yLast - 10, 80, 20);
+    ctx.fillStyle = '#fff'; ctx.font = '11px Arial';
+    ctx.fillText(last.close.toLocaleString('en-US', {style:'currency', currency:'USD'}), width - 75, yLast + 4);
 
-    // 9. 십자선 (마우스 오버 시)
-    if(mouseX >= 0 && mouseY >= 0) {
-        ctx.strokeStyle = '#999';
-        ctx.setLineDash([6, 6]);
-        ctx.lineWidth = 1;
+    // 십자선 (마우스)
+    if(mouseX >= 0) {
+        ctx.strokeStyle = '#aaa'; ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(mouseX, 0); ctx.lineTo(mouseX, height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, mouseY); ctx.lineTo(width, mouseY); ctx.stroke(); ctx.setLineDash([]);
 
-        // 세로선
-        ctx.beginPath();
-        ctx.moveTo(mouseX, 0); ctx.lineTo(mouseX, height);
-        ctx.stroke();
-        // 가로선
-        ctx.beginPath();
-        ctx.moveTo(0, mouseY); ctx.lineTo(width, mouseY);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // 정보창 (Crosshair Info) 업데이트
-        // 마우스 X 위치에 해당하는 캔들 찾기
-        // (정확한 매핑은 복잡하므로 여기선 시각적 효과만)
         elInfo.style.display = 'block';
         elInfo.style.left = mouseX + 15 + 'px';
         elInfo.style.top = mouseY + 15 + 'px';
-        
-        // 가격 역산
         const hoverPrice = minP + ((chartHeight - mouseY) / chartHeight) * priceRange;
-        elInfo.innerText = `Price: ${hoverPrice.toFixed(2)}`;
+        elInfo.innerText = fmtUSD(hoverPrice);
     } else {
         elInfo.style.display = 'none';
     }
 }
 
 /* ────────────────────────────────────────────────
-   3. 시뮬레이션 및 UI
+   3. UI 업데이트
 ──────────────────────────────────────────────── */
-function updateUI() {
-    const last = candles[candles.length - 1];
-    const startPrice = 65000;
-    const pct = ((last.close - startPrice) / startPrice) * 100;
+function updateUI(candle) {
+    if(!candle) return;
+    elPrice.innerText = fmtUSD(candle.close);
+}
+
+function updateUI_Ticker(raw) {
+    const price = raw.PRICE;
+    const change = raw.CHANGEPCT24HOUR; // 24시간 변동률
     
-    elPrice.innerText = last.close.toLocaleString(undefined, {minimumFractionDigits: 2});
-    elChange.innerText = (pct >= 0 ? "+" : "") + pct.toFixed(2) + "%";
+    elPrice.innerText = fmtUSD(price);
+    elChange.innerText = (change > 0 ? "+" : "") + change.toFixed(2) + "%";
     
-    const colorClass = pct >= 0 ? 'up-text' : 'down-text';
+    // 해외 표준 색상 적용
+    const colorClass = change > 0 ? 'up-text' : 'down-text';
     elPrice.className = `value ${colorClass}`;
     elChange.className = `value ${colorClass}`;
 }
 
-function simulate() {
-    let last = candles[candles.length - 1];
-    let change = (Math.random() - 0.5) * 100; // 변동폭
-    
-    // 현재 캔들 갱신
-    last.close += change;
-    if(last.close > last.high) last.high = last.close;
-    if(last.close < last.low) last.low = last.close;
-    last.volume += Math.random() * 10;
-
-    // 새 캔들 생성 (5% 확률)
-    if(Math.random() < 0.05) {
-        let open = last.close;
-        candles.push({ open, close: open, high: open, low: open, volume: 0, time: last.time + 1 });
-        if(candles.length > 200) candles.shift();
-    }
-    
-    updateUI();
-    draw();
-}
-
-// 이벤트 리스너
+// 이벤트
 window.addEventListener('resize', draw);
 canvas.addEventListener('mousemove', e => {
     const rect = canvas.getBoundingClientRect();
     mouseX = e.clientX - rect.left;
     mouseY = e.clientY - rect.top;
 });
-canvas.addEventListener('mouseleave', () => {
-    mouseX = -1; mouseY = -1;
-});
+canvas.addEventListener('mouseleave', () => { mouseX = -1; mouseY = -1; });
 
-// 실행
-initData();
-draw();
-setInterval(simulate, 100); // 0.1초마다 움직임
+// 시작
+fetchHistory();
+setInterval(fetchTicker, 2000); // 2초마다 갱신 (부하 방지)
