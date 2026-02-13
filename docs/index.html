@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTS PRO - FULL SCREEN</title>
+    <title>PRO TRADER HTS - FULL INTERVAl</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
 </head>
@@ -26,12 +26,19 @@
                     <span id="display-change" class="p-chg">0.00%</span>
                 </div>
             </div>
+            
             <div class="h-right">
                 <div class="iv-tabs">
                     <button class="iv-btn" onclick="changeInterval('1m')">1m</button>
+                    <button class="iv-btn" onclick="changeInterval('3m')">3m</button>
+                    <button class="iv-btn" onclick="changeInterval('5m')">5m</button>
                     <button class="iv-btn" onclick="changeInterval('15m')">15m</button>
+                    <button class="iv-btn" onclick="changeInterval('30m')">30m</button>
                     <button class="iv-btn" onclick="changeInterval('1h')">1H</button>
+                    <button class="iv-btn" onclick="changeInterval('4h')">4H</button>
                     <button class="iv-btn active" onclick="changeInterval('1d')">1D</button>
+                    <button class="iv-btn" onclick="changeInterval('1w')">1W</button>
+                    <button class="iv-btn" onclick="changeInterval('1M')">1M</button>
                 </div>
             </div>
         </header>

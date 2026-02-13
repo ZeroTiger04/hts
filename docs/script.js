@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════
-   PRO CHART ENGINE v4 (Anti-Block & Safety)
+   PRO CHART ENGINE v5 (Full Interval Support)
 ══════════════════════════════════════════════ */
 
 const mainCanvas = document.getElementById('mainLayer');
@@ -21,74 +21,115 @@ let currentInterval = '1d';
 let candles = [];
 let width, height, minP, maxP, pRange;
 let mouseX = -1, mouseY = -1;
+let proxyIdx = 0;
 
-// 1. 코인 리스트 & 검색
-const dropdown = document.getElementById('dropdown');
-const coinList = document.getElementById('coinList');
-const searchInput = document.getElementById('coinSearch');
+// 프록시 목록 (Allorigins, CorsProxy, 직접 연결 순서)
+const PROXIES = [
+    (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    (url) => url
+];
 
-function renderCoins(filter = "") {
-    coinList.innerHTML = "";
-    const filtered = coins.filter(c => c.n.toLowerCase().includes(filter.toLowerCase()));
-    filtered.forEach(c => {
-        const item = document.createElement('div');
-        item.className = 'm-item';
-        item.onclick = (e) => { e.stopPropagation(); selectCoin(c); };
-        item.innerHTML = `<span>${c.n}/USDT</span><span id="price-${c.s}">-</span>`;
-        coinList.appendChild(item);
+function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    width = mainCanvas.parentElement.clientWidth;
+    height = mainCanvas.parentElement.clientHeight;
+    [mainCanvas, uiCanvas].forEach(cvs => {
+        cvs.width = width * dpr; cvs.height = height * dpr;
+        cvs.getContext('2d').scale(dpr, dpr);
     });
+    if(candles.length > 0) drawMain();
+}
+window.addEventListener('resize', resize);
+
+function changeInterval(iv) {
+    document.querySelectorAll('.iv-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    currentInterval = iv;
+    loadHistory(iv);
 }
 
-document.getElementById('symbol-btn').onclick = () => { dropdown.classList.toggle('show'); if(dropdown.classList.contains('show')) searchInput.focus(); };
-function selectCoin(coin) { currentCoin = coin; document.getElementById('display-symbol').innerText = `${coin.n} / USDT`; dropdown.classList.remove('show'); loadHistory(currentInterval); }
-function changeInterval(iv) { document.querySelectorAll('.iv-btn').forEach(b => b.classList.remove('active')); event.target.classList.add('active'); currentInterval = iv; loadHistory(iv); }
-
-// 2. 데이터 로드 (안전 모드 탑재)
+// 데이터 로드 핵심 함수
 async function loadHistory(iv) {
     elLoader.classList.remove('hide');
-    elLoader.innerText = "데이터 연결 중...";
+    elLoader.innerText = `LOADING ${currentSymbol(currentInterval)}... (Try ${proxyIdx + 1})`;
     
-    const target = `https://api.binance.com/api/v3/klines?symbol=${currentCoin.s.toUpperCase()}&interval=${iv}&limit=150`;
-    
-    // 시도할 URL 목록 (직접 접속 -> 우회 접속)
-    const urls = [
-        target,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
-        `https://corsproxy.io/?${encodeURIComponent(target)}`
-    ];
+    // 바이낸스 캔들 API 호출
+    const target = `https://api.binance.com/api/v3/klines?symbol=${currentCoin.s.toUpperCase()}&interval=${iv}&limit=180`;
+    const requestUrl = PROXIES[proxyIdx](target);
 
-    for (let url of urls) {
-        try {
-            const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
-            if (!res.ok) throw new Error();
-            const data = await res.json();
-            candles = data.map(d => ({ time: d[0], open: parseFloat(d[1]), high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4]) }));
-            
-            elLoader.classList.add('hide');
-            drawMain();
-            return; // 성공하면 종료
-        } catch(e) { continue; }
+    try {
+        const res = await fetch(requestUrl, { signal: AbortSignal.timeout(4000) });
+        if(!res.ok) throw new Error();
+        const data = await res.json();
+
+        candles = data.map(d => ({ 
+            time: d[0], open: parseFloat(d[1]), high: parseFloat(d[2]), 
+            low: parseFloat(d[3]), close: parseFloat(d[4]) 
+        }));
+        
+        elLoader.classList.add('hide');
+        proxyIdx = 0; // 성공 시 프록시 인덱스 초기화
+        drawMain();
+        startTicker();
+    } catch(e) {
+        proxyIdx++;
+        if(proxyIdx < PROXIES.length) {
+            loadHistory(iv); // 다음 프록시로 재시도
+        } else {
+            // 모든 접속 실패 시 데모 데이터 가동
+            proxyIdx = 0;
+            generateDemoData();
+            elLoader.innerText = "OFFLINE MODE (NETWORK BLOCKED)";
+            setTimeout(() => elLoader.classList.add('hide'), 2000);
+        }
     }
-
-    // 3. 최후의 수단: 데모 데이터 (네트워크 차단 시)
-    elLoader.innerText = "네트워크 차단됨 - 데모 모드 실행";
-    generateDemoData();
-    setTimeout(() => elLoader.classList.add('hide'), 2000);
 }
 
+// 데모 데이터 생성 (비상용)
 function generateDemoData() {
     let p = 50000;
     candles = Array.from({length: 150}, (_, i) => {
-        const o = p; const c = p + (Math.random() - 0.5) * 500;
-        const h = Math.max(o, c) + Math.random() * 200;
-        const l = Math.min(o, c) - Math.random() * 200;
+        const o = p; const c = p + (Math.random() - 0.5) * 600;
         p = c;
-        return { time: Date.now() - (150 - i) * 60000, open: o, high: h, low: l, close: c };
+        return { time: Date.now() - (150-i)*60000, open: o, high: Math.max(o,c)+100, low: Math.min(o,c)-100, close: c };
     });
     drawMain();
 }
 
-// 4. 차트 그리기 엔진
+function currentSymbol(iv) { return `${currentCoin.n} / ${iv}`; }
+
+// 실시간 시세 폴링
+function startTicker() {
+    if(window.tTimer) clearInterval(window.tTimer);
+    window.tTimer = setInterval(async () => {
+        const url = `https://api.binance.com/api/v3/ticker/24hr?symbol=${currentCoin.s.toUpperCase()}`;
+        try {
+            const res = await fetch(PROXIES[0](url));
+            const d = await res.json();
+            if(candles.length > 0) {
+                let last = candles[candles.length - 1];
+                last.close = parseFloat(d.lastPrice);
+                last.high = Math.max(last.high, last.close);
+                last.low = Math.min(last.low, last.close);
+                updateTickerUI(d);
+                drawMain();
+            }
+        } catch(e) {}
+    }, 3000);
+}
+
+function updateTickerUI(d) {
+    const price = parseFloat(d.lastPrice), pct = parseFloat(d.priceChangePercent);
+    const elP = document.getElementById('display-price');
+    const elC = document.getElementById('display-change');
+    elP.innerText = price.toLocaleString();
+    elP.className = `p-val ${pct >= 0 ? 'c-up' : 'c-down'}`;
+    elC.innerText = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+    elC.className = `p-chg ${pct >= 0 ? 'c-up' : 'c-down'}`;
+}
+
+// 차트 렌더링 (Canvas)
 function drawMain() {
     const dpr = window.devicePixelRatio || 1;
     width = mainCanvas.parentElement.clientWidth; height = mainCanvas.parentElement.clientHeight;
@@ -102,29 +143,24 @@ function drawMain() {
     minP -= padding; maxP += padding; pRange = maxP - minP;
 
     candles.forEach((c, i) => {
-        const x = i * candleW, realW = candleW * 0.7;
+        const x = i * candleW, rW = candleW * 0.7;
         const yO = height - ((c.open - minP) / pRange) * height;
         const yC = height - ((c.close - minP) / pRange) * height;
         const color = c.close >= c.open ? "#0ecb81" : "#f6465d";
         ctxMain.fillStyle = color; ctxMain.strokeStyle = color;
-        ctxMain.beginPath(); ctxMain.moveTo(x + realW/2, height - ((c.high - minP) / pRange) * height);
-        ctxMain.lineTo(x + realW/2, height - ((c.low - minP) / pRange) * height); ctxMain.stroke();
-        ctxMain.fillRect(x, Math.min(yO, yC), realW, Math.max(1, Math.abs(yC - yO)));
+        ctxMain.beginPath(); ctxMain.moveTo(x + rW/2, height - ((c.high - minP) / pRange) * height);
+        ctxMain.lineTo(x + rW/2, height - ((c.low - minP) / pRange) * height); ctxMain.stroke();
+        ctxMain.fillRect(x, Math.min(yO, yC), rW, Math.max(1, Math.abs(yC - yO)));
     });
 
-    // 실시간 가격 표시 (마지막 캔들)
-    const last = candles[candles.length-1];
+    const last = candles[candles.length - 1];
     const yL = height - ((last.close - minP) / pRange) * height;
     ctxMain.fillStyle = last.close >= last.open ? "#0ecb81" : "#f6465d";
     ctxMain.fillRect(width - 100, yL - 10, 100, 20);
     ctxMain.fillStyle = '#fff'; ctxMain.font = 'bold 12px Roboto Mono';
     ctxMain.fillText(last.close.toLocaleString(), width - 90, yL + 4);
-    
-    // 상단 UI 업데이트
-    document.getElementById('display-price').innerText = last.close.toLocaleString();
 }
 
-// 십자선 제어
 uiCanvas.onmousemove = (e) => {
     const rect = uiCanvas.getBoundingClientRect(); mouseX = e.clientX - rect.left; mouseY = e.clientY - rect.top;
     ctxUI.clearRect(0, 0, width, height);
@@ -137,5 +173,4 @@ uiCanvas.onmousemove = (e) => {
 };
 
 window.onresize = drawMain;
-renderCoins();
 loadHistory('1d');
