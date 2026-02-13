@@ -3,58 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO CHART - BTC/USDT</title>
+    <title>BINANCE STYLE CHART</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="shell">
         <header>
-            <div class="status-box">
-                <div class="dot"></div>
-                <span>LIVE DATA</span>
+            <div class="pair-info">
+                <h1 class="symbol">BTC/USDT</h1>
+                <span class="sub-text">Perpetual</span>
             </div>
-        </header>
-
-        <div class="ticker-bar">
-            <div class="coin-section">
-                <div class="coin-info">
-                    <div class="coin-icon">₿</div>
-                    <div class="coin-text">
-                        <div class="symbol">BTC / USDT</div>
-                        <div class="sub">CryptoCompare</div>
-                    </div>
-                </div>
+            
+            <div class="price-info">
+                <span class="current-price" id="displayPrice">0.00</span>
+                <span class="price-change" id="displayChange">0.00%</span>
             </div>
 
-            <div class="interval-selector">
+            <div class="intervals">
                 <button class="iv-btn" onclick="changeInterval('1m')">1m</button>
-                <button class="iv-btn" onclick="changeInterval('3m')">3m</button>
-                <button class="iv-btn" onclick="changeInterval('5m')">5m</button>
                 <button class="iv-btn" onclick="changeInterval('15m')">15m</button>
                 <button class="iv-btn" onclick="changeInterval('1h')">1H</button>
                 <button class="iv-btn" onclick="changeInterval('4h')">4H</button>
                 <button class="iv-btn active" onclick="changeInterval('1d')">1D</button>
                 <button class="iv-btn" onclick="changeInterval('1w')">1W</button>
-                <button class="iv-btn" onclick="changeInterval('1M')">1M</button>
             </div>
+        </header>
 
-            <div class="price-section">
-                <div class="price-box">
-                    <div class="label">Price</div>
-                    <div class="value" id="price">0.00</div>
-                </div>
-                
-                <div class="stat-box">
-                    <div class="label">24h Chg</div>
-                    <div class="value" id="change">0.00%</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="chart-area">
-            <canvas id="chartCanvas"></canvas>
-            <div class="crosshair-info" id="crosshairInfo"></div>
-            <div id="loading" class="loading-overlay hide">LOADING...</div>
+        <div class="chart-container">
+            <canvas id="mainLayer"></canvas>
+            <canvas id="uiLayer"></canvas>
+            
+            <div id="loader" class="loader">LOADING DATA...</div>
         </div>
     </div>
 

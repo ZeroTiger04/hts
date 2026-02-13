@@ -1,66 +1,60 @@
 :root {
-    --bg: #0b0e11;
-    --card: #161a1e;
-    --text: #eaecef;
-    --text-dim: #848e9c;
-    --up: #0ecb81;
-    --down: #f6465d;
-    --accent: #fcd535;
-    --grid: #252930;
-    --btn-hover: #2b3139;
+    --bg-color: #161a1e;       /* 바이낸스 배경 */
+    --card-bg: #1e2329;        /* 헤더 배경 */
+    --grid-color: #2b3139;     /* 격자 색상 */
+    --text-primary: #eaecef;   /* 흰색 글씨 */
+    --text-secondary: #848e9c; /* 회색 글씨 */
+    --up-color: #0ecb81;       /* 상승 (초록) */
+    --down-color: #f6465d;     /* 하락 (빨강) */
+    --crosshair: #ffffff;      /* 십자선 */
+    --yellow: #fcd535;         /* 강조색 */
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; height: 100vh; overflow: hidden; }
+body { background-color: var(--bg-color); color: var(--text-primary); font-family: 'Binance Plex', Arial, sans-serif; height: 100vh; overflow: hidden; }
 
 .shell { display: flex; flex-direction: column; height: 100%; }
 
-/* 헤더 */
-header { height: 30px; border-bottom: 1px solid var(--grid); display: flex; align-items: center; justify-content: flex-end; padding: 0 20px; font-size: 11px; background: var(--card); }
-.status-box { display: flex; align-items: center; gap: 6px; color: var(--up); font-weight: bold; }
-.dot { width: 6px; height: 6px; background: var(--up); border-radius: 50%; box-shadow: 0 0 8px var(--up); animation: blink 2s infinite; }
-@keyframes blink { 50% { opacity: 0.5; } }
-
-/* 티커 바 (레이아웃 수정) */
-.ticker-bar { height: 60px; border-bottom: 1px solid var(--grid); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; background: var(--bg); }
-
-.coin-section { display: flex; align-items: center; width: 200px; }
-.coin-info { display: flex; align-items: center; gap: 12px; }
-.coin-icon { width: 32px; height: 32px; background: #f7931a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; }
-.symbol { font-size: 16px; font-weight: bold; }
-.sub { font-size: 11px; color: var(--text-dim); }
-
-/* [NEW] 시간 선택 버튼 스타일 */
-.interval-selector { display: flex; gap: 2px; background: var(--card); padding: 4px; border-radius: 4px; border: 1px solid var(--grid); }
-.iv-btn { 
-    background: none; border: none; color: var(--text-dim); 
-    padding: 4px 8px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 2px; transition: all 0.2s; 
-}
-.iv-btn:hover { color: var(--text); background: var(--btn-hover); }
-.iv-btn.active { color: var(--accent); background: var(--btn-hover); }
-
-.price-section { display: flex; gap: 30px; text-align: right; }
-.label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 2px; }
-.value { font-size: 16px; font-weight: bold; font-family: 'Roboto Mono', monospace; }
-
-.up-text { color: var(--up); }
-.down-text { color: var(--down); }
-
-/* 차트 영역 */
-.chart-area { flex: 1; position: relative; background: var(--bg); cursor: crosshair; }
-canvas { display: block; width: 100%; height: 100%; }
-
-.crosshair-info {
-    position: absolute; top: 10px; left: 10px;
-    background: rgba(22, 26, 30, 0.9); padding: 6px 12px;
-    border-radius: 4px; font-size: 12px; pointer-events: none;
-    display: none; border: 1px solid var(--grid); color: #fff; z-index: 10;
+/* 헤더 스타일 */
+header {
+    height: 50px; background-color: var(--bg-color); border-bottom: 1px solid var(--grid-color);
+    display: flex; align-items: center; padding: 0 16px; gap: 24px;
 }
 
-.loading-overlay {
-    position: absolute; inset: 0; background: rgba(11, 14, 17, 0.8);
-    display: flex; align-items: center; justify-content: center;
-    color: var(--text-dim); font-size: 14px; letter-spacing: 2px;
-    z-index: 20;
+.pair-info { display: flex; align-items: baseline; gap: 8px; }
+.symbol { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.sub-text { font-size: 12px; color: var(--text-secondary); }
+
+.price-info { display: flex; flex-direction: column; }
+.current-price { font-size: 14px; font-weight: bold; color: var(--up-color); font-family: monospace; }
+.price-change { font-size: 10px; color: var(--text-secondary); }
+
+.intervals { display: flex; margin-left: auto; gap: 4px; }
+.iv-btn {
+    background: none; border: none; color: var(--text-secondary);
+    font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px;
+    border-radius: 4px; transition: 0.2s;
 }
-.loading-overlay.hide { display: none; }
+.iv-btn:hover { color: var(--text-primary); background-color: var(--card-bg); }
+.iv-btn.active { color: var(--yellow); }
+
+/* 차트 컨테이너 (중요: 캔버스 겹치기) */
+.chart-container { flex: 1; position: relative; cursor: crosshair; background-color: var(--bg-color); }
+
+canvas {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: block; /* 공백 제거 */
+}
+
+/* UI 레이어는 메인 레이어 위에 있어야 함 */
+#uiLayer { z-index: 10; }
+
+.loader {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    color: var(--text-secondary); font-size: 12px; pointer-events: none;
+}
+.loader.hide { display: none; }
+
+/* 색상 유틸리티 */
+.text-up { color: var(--up-color) !important; }
+.text-down { color: var(--down-color) !important; }
