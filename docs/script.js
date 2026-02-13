@@ -1,129 +1,176 @@
 /* ══════════════════════════════════════════════
-   PRO TRADER ENGINE (TV WIDGET + BINANCE WS)
+   FULL-SCREEN LIVE CHART ENGINE
+   (Binance WebSocket + Custom Canvas)
 ══════════════════════════════════════════════ */
 
+const mainCanvas = document.getElementById('mainLayer');
+const uiCanvas = document.getElementById('uiLayer');
+const ctxMain = mainCanvas.getContext('2d');
+const ctxUI = uiCanvas.getContext('2d');
+const elLoader = document.getElementById('loader');
+
+// 제공된 코인 리스트
 const coins = [
-    { id: 'btc', s: 'btcusdt', n: 'BTC', name:'Bitcoin', tv: 'BINANCE:BTCUSDT' },
-    { id: 'eth', s: 'ethusdt', n: 'ETH', name:'Ethereum', tv: 'BINANCE:ETHUSDT' },
-    { id: 'sol', s: 'solusdt', n: 'SOL', name:'Solana', tv: 'BINANCE:SOLUSDT' },
-    { id: 'xrp', s: 'xrpusdt', n: 'XRP', name:'Ripple', tv: 'BINANCE:XRPUSDT' },
-    { id: 'doge', s: 'dogeusdt', n: 'DOGE', name:'Dogecoin', tv: 'BINANCE:DOGEUSDT' }
+    { s: 'btcusdt', n: 'BTC', name:'Bitcoin' },
+    { s: 'ethusdt', n: 'ETH', name:'Ethereum' },
+    { s: 'xrpusdt', n: 'XRP', name:'Ripple' },
+    { s: 'solusdt', n: 'SOL', name:'Solana' },
+    { s: 'bnbusdt', n: 'BNB', name:'BNB' },
+    { s: 'dogeusdt', n: 'DOGE', name:'Dogecoin' },
+    { s: 'adausdt', n: 'ADA', name:'Cardano' },
+    { s: 'pepeusdt', n: 'PEPE', name:'Pepe' }
 ];
 
 let currentCoin = coins[0];
-let currentInterval = 'D'; // 기본 일봉
-let tvWidget = null;
+let currentInterval = '1d';
+let candles = [];
+let width, height, minP, maxP, pRange;
+let mouseX = -1, mouseY = -1;
+let ws = null;
 
-// 1. 드롭다운 메뉴 생성
-const dropdownEl = document.getElementById('dropdown');
-coins.forEach(c => {
-    const item = document.createElement('div');
-    item.className = 'menu-item';
-    item.onclick = () => selectCoin(c);
-    item.innerHTML = `
-        <div>
-            <div style="font-weight:bold">${c.n}/USDT</div>
-            <div style="font-size:10px; color:#848e9c">${c.name}</div>
-        </div>
-        <div style="text-align:right">
-            <div id="menu-price-${c.s}">-</div>
-            <div id="menu-change-${c.s}" style="font-size:11px">0.00%</div>
-        </div>
-    `;
-    dropdownEl.appendChild(item);
-});
+// 1. 종목 검색 및 드롭다운 로직
+const dropdown = document.getElementById('dropdown');
+const coinList = document.getElementById('coinList');
+const searchInput = document.getElementById('coinSearch');
 
-// 2. 종목 및 시간 변경 로직
-const btn = document.getElementById('symbol-btn');
-btn.onclick = () => dropdownEl.classList.toggle('show');
-document.addEventListener('click', (e) => { if (!btn.contains(e.target)) dropdownEl.classList.remove('show'); });
-
-function selectCoin(coin) {
-    currentCoin = coin;
-    document.getElementById('display-symbol').innerText = `${coin.n}/USDT`;
-    loadChart();
-}
-
-function setIv(iv) {
-    currentInterval = iv;
-    document.querySelectorAll('.iv-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-    loadChart();
-}
-
-// 3. 트레이딩뷰 위젯 로드 (정확한 데이터)
-function loadChart() {
-    if (tvWidget) {
-        // 기존 차트가 있으면 심볼/시간만 변경 (더 빠름)
-        // 위젯 재생성이 필요한 경우 컨테이너를 비우고 다시 만듭니다.
-        document.getElementById('tv_chart_container').innerHTML = "";
-    }
-
-    tvWidget = new TradingView.widget({
-        "autosize": true,
-        "symbol": currentCoin.tv,
-        "interval": currentInterval,
-        "timezone": "Asia/Seoul",
-        "theme": "dark",
-        "style": "1",
-        "locale": "kr",
-        "toolbar_bg": "#161a1e",
-        "enable_publishing": false,
-        "hide_side_toolbar": false,
-        "container_id": "tv_chart_container",
-        "save_image": false,
-        "overrides": {
-            "paneProperties.background": "#161a1e",
-            "paneProperties.vertGridProperties.color": "#2b3139",
-            "paneProperties.horzGridProperties.color": "#2b3139",
-            "mainSeriesProperties.candleStyle.upColor": "#0ecb81",
-            "mainSeriesProperties.candleStyle.downColor": "#f6465d",
-            "mainSeriesProperties.candleStyle.wickUpColor": "#0ecb81",
-            "mainSeriesProperties.candleStyle.wickDownColor": "#f6465d",
-        }
+function renderCoinList(filter = "") {
+    coinList.innerHTML = "";
+    const filtered = coins.filter(c => c.n.toLowerCase().includes(filter.toLowerCase()) || c.name.toLowerCase().includes(filter.toLowerCase()));
+    filtered.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'menu-item';
+        item.onclick = (e) => { e.stopPropagation(); selectCoin(c); };
+        item.innerHTML = `<div><div style="font-weight:bold">${c.n}/USDT</div><div style="font-size:10px;color:#848e9c">${c.name}</div></div><div id="price-${c.s}">-</div>`;
+        coinList.appendChild(item);
     });
 }
 
-// 4. 바이낸스 웹소켓 (상단 바 실시간 데이터)
-const streams = coins.map(c => `${c.s}@ticker`).join('/');
-const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
+function filterCoins() { renderCoinList(searchInput.value); }
+document.getElementById('symbol-btn').onclick = () => {
+    dropdown.classList.toggle('show');
+    if(dropdown.classList.contains('show')) searchInput.focus();
+};
+document.addEventListener('click', (e) => { if(!document.getElementById('symbol-btn').contains(e.target)) dropdown.classList.remove('show'); });
 
-ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    const s = data.s.toLowerCase();
-    const p = parseFloat(data.c);   
-    const P = parseFloat(data.P);   
-    const h = parseFloat(data.h);   
-    const l = parseFloat(data.l);   
+function selectCoin(coin) {
+    currentCoin = coin;
+    document.getElementById('display-symbol').innerText = `${coin.n} / USDT`;
+    dropdown.classList.remove('show');
+    loadHistory(currentInterval);
+}
 
-    const fmtPrice = p < 1 ? p.toFixed(5) : p.toLocaleString(undefined, {minimumFractionDigits:2});
-    const fmtPct = (P >= 0 ? "+" : "") + P.toFixed(2) + "%";
-    const colorClass = P >= 0 ? 'c-up' : 'c-down';
+function changeInterval(iv) {
+    document.querySelectorAll('.iv-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    currentInterval = iv;
+    loadHistory(iv);
+}
 
-    // 메뉴 시세 업데이트
-    const menuPrice = document.getElementById(`menu-price-${s}`);
-    const menuChange = document.getElementById(`menu-change-${s}`);
-    if(menuPrice) {
-        menuPrice.innerText = fmtPrice;
-        menuPrice.className = colorClass;
-        menuChange.innerText = fmtPct;
-        menuChange.className = colorClass;
-    }
+// 2. 차트 데이터 로드 및 그리기
+async function loadHistory(iv) {
+    elLoader.classList.remove('hide');
+    // 바이낸스 과거 캔들 데이터 요청 (AllOrigins 프록시 사용)
+    const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.binance.com/api/v3/klines?symbol=${currentCoin.s.toUpperCase()}&interval=${iv}&limit=150`)}`;
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        candles = data.map(d => ({ time: d[0], open: parseFloat(d[1]), high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4]), volume: parseFloat(d[5]) }));
+        elLoader.classList.add('hide');
+        drawMain();
+        connectWebSocket();
+    } catch(e) { console.error("History Load Error"); }
+}
 
-    // 메인 시세 업데이트 (현재 종목인 경우)
-    if (s === currentCoin.s) {
-        const elMainPrice = document.getElementById('display-price');
-        elMainPrice.innerText = fmtPrice;
-        elMainPrice.className = `price-val ${colorClass}`;
+// 웹소켓 실시간 연동
+function connectWebSocket() {
+    if(ws) ws.close();
+    const streams = coins.map(c => `${c.s}@ticker`).join('/');
+    ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
 
-        const elMainChange = document.getElementById('display-change');
-        elMainChange.innerText = fmtPct;
-        elMainChange.className = `stat-val ${colorClass}`;
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        const s = data.s.toLowerCase();
+        
+        // 메뉴 가격 실시간 업데이트
+        const elMenuPrice = document.getElementById(`price-${s}`);
+        if(elMenuPrice) elMenuPrice.innerText = parseFloat(data.c).toLocaleString();
 
-        document.getElementById('display-high').innerText = h < 1 ? h.toFixed(5) : h.toLocaleString();
-        document.getElementById('display-low').innerText = l < 1 ? l.toFixed(5) : l.toLocaleString();
-    }
+        // 현재 종목 실시간 차트 업데이트
+        if (s === currentCoin.s && candles.length > 0) {
+            let last = candles[candles.length - 1];
+            last.close = parseFloat(data.c);
+            last.high = Math.max(last.high, last.close);
+            last.low = Math.min(last.low, last.close);
+            
+            updateTopUI(data);
+            drawMain();
+        }
+    };
+}
+
+function updateTopUI(data) {
+    const p = parseFloat(data.c);
+    const P = parseFloat(data.P);
+    const color = P >= 0 ? 'c-up' : 'c-down';
+    
+    document.getElementById('display-price').innerText = p.toLocaleString(undefined, {minimumFractionDigits:2});
+    document.getElementById('display-price').className = `price ${color}`;
+    document.getElementById('display-change').innerText = (P>=0?"+":"") + P.toFixed(2) + "%";
+    document.getElementById('display-change').className = `change ${color}`;
+    document.getElementById('display-high').innerText = parseFloat(data.h).toLocaleString();
+    document.getElementById('display-low').innerText = parseFloat(data.l).toLocaleString();
+}
+
+function drawMain() {
+    const dpr = window.devicePixelRatio || 1;
+    width = mainCanvas.parentElement.clientWidth; height = mainCanvas.parentElement.clientHeight;
+    [mainCanvas, uiCanvas].forEach(c => { c.width = width * dpr; c.height = height * dpr; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); });
+
+    ctxMain.fillStyle = "#0b0e11"; ctxMain.fillRect(0, 0, width, height);
+    const candleW = (width - 100) / candles.length;
+    minP = Infinity; maxP = -Infinity;
+    candles.forEach(c => { minP = Math.min(minP, c.low); maxP = Math.max(maxP, c.high); });
+    const padding = (maxP - minP) * 0.1;
+    minP -= padding; maxP += padding; pRange = maxP - minP;
+
+    // 그리드
+    ctxMain.strokeStyle = "#1e2227"; ctxMain.beginPath();
+    for(let i=1; i<8; i++) { let y = (height/8)*i; ctxMain.moveTo(0,y); ctxMain.lineTo(width,y); }
+    ctxMain.stroke();
+
+    // 캔들 그리기
+    candles.forEach((c, i) => {
+        const x = i * candleW, realW = candleW * 0.7;
+        const yO = height - ((c.open - minP) / pRange) * height;
+        const yC = height - ((c.close - minP) / pRange) * height;
+        const color = c.close >= c.open ? "#00c076" : "#ff4a5a";
+        ctxMain.fillStyle = color; ctxMain.strokeStyle = color;
+        ctxMain.beginPath(); ctxMain.moveTo(x + realW/2, height - ((c.high - minP) / pRange) * height);
+        ctxMain.lineTo(x + realW/2, height - ((c.low - minP) / pRange) * height); ctxMain.stroke();
+        ctxMain.fillRect(x, Math.min(yO, yC), realW, Math.max(1, Math.abs(yC - yO)));
+    });
+
+    // 가격 라벨
+    const last = candles[candles.length-1];
+    const yL = height - ((last.close - minP) / pRange) * height;
+    ctxMain.fillStyle = last.close >= last.open ? "#00c076" : "#ff4a5a";
+    ctxMain.fillRect(width - 100, yL - 10, 100, 20);
+    ctxMain.fillStyle = '#fff'; ctxMain.font = 'bold 12px Roboto Mono';
+    ctxMain.fillText(last.close.toLocaleString(), width - 90, yL + 4);
+}
+
+// 십자선 UI 레이어
+uiCanvas.onmousemove = (e) => {
+    const rect = uiCanvas.getBoundingClientRect(); mouseX = e.clientX - rect.left; mouseY = e.clientY - rect.top;
+    ctxUI.clearRect(0, 0, width, height);
+    ctxUI.strokeStyle = '#555'; ctxUI.setLineDash([4, 4]);
+    ctxUI.beginPath(); ctxUI.moveTo(mouseX, 0); ctxUI.lineTo(mouseX, height); ctxUI.stroke();
+    ctxUI.beginPath(); ctxUI.moveTo(0, mouseY); ctxUI.lineTo(width, mouseY); ctxUI.stroke();
+    const hP = minP + ((height - mouseY) / height) * pRange;
+    ctxUI.fillStyle = '#2b3139'; ctxUI.fillRect(width - 100, mouseY - 10, 100, 20);
+    ctxUI.fillStyle = '#fff'; ctxUI.fillText(hP.toLocaleString(undefined, {maximumFractionDigits:2}), width - 90, mouseY + 4);
 };
 
-// 초기화
-loadChart();
+window.onresize = drawMain;
+renderCoinList();
+loadHistory('1d');
