@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════
    FULL-SCREEN LIVE CHART ENGINE
-   (Binance WebSocket + Custom Canvas)
+   (Stable Proxy + Binance WebSocket)
 ══════════════════════════════════════════════ */
 
 const mainCanvas = document.getElementById('mainLayer');
@@ -9,7 +9,7 @@ const ctxMain = mainCanvas.getContext('2d');
 const ctxUI = uiCanvas.getContext('2d');
 const elLoader = document.getElementById('loader');
 
-// 제공된 코인 리스트
+// 제공된 코인 목록
 const coins = [
     { s: 'btcusdt', n: 'BTC', name:'Bitcoin' },
     { s: 'ethusdt', n: 'ETH', name:'Ethereum' },
@@ -28,7 +28,7 @@ let width, height, minP, maxP, pRange;
 let mouseX = -1, mouseY = -1;
 let ws = null;
 
-// 1. 종목 검색 및 드롭다운 로직
+// 1. 종목 검색 로직
 const dropdown = document.getElementById('dropdown');
 const coinList = document.getElementById('coinList');
 const searchInput = document.getElementById('coinSearch');
@@ -46,10 +46,7 @@ function renderCoinList(filter = "") {
 }
 
 function filterCoins() { renderCoinList(searchInput.value); }
-document.getElementById('symbol-btn').onclick = () => {
-    dropdown.classList.toggle('show');
-    if(dropdown.classList.contains('show')) searchInput.focus();
-};
+document.getElementById('symbol-btn').onclick = () => { dropdown.classList.toggle('show'); if(dropdown.classList.contains('show')) searchInput.focus(); };
 document.addEventListener('click', (e) => { if(!document.getElementById('symbol-btn').contains(e.target)) dropdown.classList.remove('show'); });
 
 function selectCoin(coin) {
@@ -66,22 +63,29 @@ function changeInterval(iv) {
     loadHistory(iv);
 }
 
-// 2. 차트 데이터 로드 및 그리기
+// 2. 데이터 로드 (History Load Error 방지 위해 프록시 보강)
 async function loadHistory(iv) {
     elLoader.classList.remove('hide');
-    // 바이낸스 과거 캔들 데이터 요청 (AllOrigins 프록시 사용)
-    const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://api.binance.com/api/v3/klines?symbol=${currentCoin.s.toUpperCase()}&interval=${iv}&limit=150`)}`;
+    // Allorigins 프록시의 'raw' 엔드포인트를 사용하여 데이터 안정성 확보
+    const apiTarget = `https://api.binance.com/api/v3/klines?symbol=${currentCoin.s.toUpperCase()}&interval=${iv}&limit=160`;
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiTarget)}`;
+
     try {
-        const res = await fetch(url);
+        const res = await fetch(proxyUrl);
+        if(!res.ok) throw new Error();
         const data = await res.json();
-        candles = data.map(d => ({ time: d[0], open: parseFloat(d[1]), high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4]), volume: parseFloat(d[5]) }));
+        candles = data.map(d => ({ time: d[0], open: parseFloat(d[1]), high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4]) }));
         elLoader.classList.add('hide');
         drawMain();
         connectWebSocket();
-    } catch(e) { console.error("History Load Error"); }
+    } catch(e) {
+        console.error("History Load Error");
+        elLoader.innerText = "데이터 로드 실패 - 재시도 중";
+        setTimeout(() => loadHistory(iv), 3000);
+    }
 }
 
-// 웹소켓 실시간 연동
+// 실시간 웹소켓
 function connectWebSocket() {
     if(ws) ws.close();
     const streams = coins.map(c => `${c.s}@ticker`).join('/');
@@ -109,18 +113,17 @@ function connectWebSocket() {
 }
 
 function updateTopUI(data) {
-    const p = parseFloat(data.c);
-    const P = parseFloat(data.P);
+    const p = parseFloat(data.c), P = parseFloat(data.P);
     const color = P >= 0 ? 'c-up' : 'c-down';
-    
     document.getElementById('display-price').innerText = p.toLocaleString(undefined, {minimumFractionDigits:2});
-    document.getElementById('display-price').className = `price ${color}`;
+    document.getElementById('display-price').className = `main-price ${color}`;
     document.getElementById('display-change').innerText = (P>=0?"+":"") + P.toFixed(2) + "%";
-    document.getElementById('display-change').className = `change ${color}`;
+    document.getElementById('display-change').className = `main-change ${color}`;
     document.getElementById('display-high').innerText = parseFloat(data.h).toLocaleString();
     document.getElementById('display-low').innerText = parseFloat(data.l).toLocaleString();
 }
 
+// 3. 캔버스 렌더링 엔진 (렉 없음)
 function drawMain() {
     const dpr = window.devicePixelRatio || 1;
     width = mainCanvas.parentElement.clientWidth; height = mainCanvas.parentElement.clientHeight;
@@ -130,44 +133,39 @@ function drawMain() {
     const candleW = (width - 100) / candles.length;
     minP = Infinity; maxP = -Infinity;
     candles.forEach(c => { minP = Math.min(minP, c.low); maxP = Math.max(maxP, c.high); });
-    const padding = (maxP - minP) * 0.1;
+    const padding = (maxP - minP) * 0.15;
     minP -= padding; maxP += padding; pRange = maxP - minP;
-
-    // 그리드
-    ctxMain.strokeStyle = "#1e2227"; ctxMain.beginPath();
-    for(let i=1; i<8; i++) { let y = (height/8)*i; ctxMain.moveTo(0,y); ctxMain.lineTo(width,y); }
-    ctxMain.stroke();
 
     // 캔들 그리기
     candles.forEach((c, i) => {
         const x = i * candleW, realW = candleW * 0.7;
         const yO = height - ((c.open - minP) / pRange) * height;
         const yC = height - ((c.close - minP) / pRange) * height;
-        const color = c.close >= c.open ? "#00c076" : "#ff4a5a";
+        const color = c.close >= c.open ? "#0ecb81" : "#f6465d";
         ctxMain.fillStyle = color; ctxMain.strokeStyle = color;
         ctxMain.beginPath(); ctxMain.moveTo(x + realW/2, height - ((c.high - minP) / pRange) * height);
         ctxMain.lineTo(x + realW/2, height - ((c.low - minP) / pRange) * height); ctxMain.stroke();
         ctxMain.fillRect(x, Math.min(yO, yC), realW, Math.max(1, Math.abs(yC - yO)));
     });
 
-    // 가격 라벨
+    // 가격 라인
     const last = candles[candles.length-1];
     const yL = height - ((last.close - minP) / pRange) * height;
-    ctxMain.fillStyle = last.close >= last.open ? "#00c076" : "#ff4a5a";
+    ctxMain.fillStyle = last.close >= last.open ? "#0ecb81" : "#f6465d";
     ctxMain.fillRect(width - 100, yL - 10, 100, 20);
     ctxMain.fillStyle = '#fff'; ctxMain.font = 'bold 12px Roboto Mono';
     ctxMain.fillText(last.close.toLocaleString(), width - 90, yL + 4);
 }
 
-// 십자선 UI 레이어
+// 십자선 UI
 uiCanvas.onmousemove = (e) => {
     const rect = uiCanvas.getBoundingClientRect(); mouseX = e.clientX - rect.left; mouseY = e.clientY - rect.top;
     ctxUI.clearRect(0, 0, width, height);
-    ctxUI.strokeStyle = '#555'; ctxUI.setLineDash([4, 4]);
+    ctxUI.strokeStyle = '#444'; ctxUI.setLineDash([5, 5]);
     ctxUI.beginPath(); ctxUI.moveTo(mouseX, 0); ctxUI.lineTo(mouseX, height); ctxUI.stroke();
     ctxUI.beginPath(); ctxUI.moveTo(0, mouseY); ctxUI.lineTo(width, mouseY); ctxUI.stroke();
     const hP = minP + ((height - mouseY) / height) * pRange;
-    ctxUI.fillStyle = '#2b3139'; ctxUI.fillRect(width - 100, mouseY - 10, 100, 20);
+    ctxUI.fillStyle = '#1e2329'; ctxUI.fillRect(width - 100, mouseY - 10, 100, 20);
     ctxUI.fillStyle = '#fff'; ctxUI.fillText(hP.toLocaleString(undefined, {maximumFractionDigits:2}), width - 90, mouseY + 4);
 };
 
