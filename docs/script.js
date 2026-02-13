@@ -1,27 +1,19 @@
 /* ══════════════════════════════════════════════
-   CRYPTEX v3 — Ultimate Safety Version
-   (데이터 로드 실패 시 데모 모드 자동 전환)
+   CRYPTEX v3 — Public Data Version
+   (Source: CryptoCompare Free API)
+   (Mode: REST API + Polling / No WebSockets)
 ══════════════════════════════════════════════ */
 
-// 1. 설정
-const CONFIG = {
-    // 1순위: 바이낸스 공식 데이터 API (CORS 허용됨)
-    API_URL: 'https://data-api.binance.vision/api/v3/klines',
-    // 2순위: 프록시 우회 (1순위 실패 시 사용)
-    PROXY_URL: 'https://corsproxy.io/?', 
-    WS_URL: 'wss://stream.binance.com:9443/ws',
-    LIMIT: 1000
-};
-
+// 1. 코인 설정 (CryptoCompare 심볼 매핑)
 const COINS = [
-    { s:'BTCUSDT',  n:'BTC',  name:'Bitcoin',  logo:'https://assets.coingecko.com/coins/images/1/small/bitcoin.png' },
-    { s:'ETHUSDT',  n:'ETH',  name:'Ethereum', logo:'https://assets.coingecko.com/coins/images/279/small/ethereum.png' },
-    { s:'XRPUSDT',  n:'XRP',  name:'Ripple',   logo:'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png' },
-    { s:'SOLUSDT',  n:'SOL',  name:'Solana',   logo:'https://assets.coingecko.com/coins/images/4128/small/solana.png' },
-    { s:'BNBUSDT',  n:'BNB',  name:'BNB',      logo:'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png' },
-    { s:'DOGEUSDT', n:'DOGE', name:'Dogecoin', logo:'https://assets.coingecko.com/coins/images/5/small/dogecoin.png' },
-    { s:'ADAUSDT',  n:'ADA',  name:'Cardano',  logo:'https://assets.coingecko.com/coins/images/975/small/cardano.png' },
-    { s:'PEPEUSDT', n:'PEPE', name:'Pepe',     logo:'https://assets.coingecko.com/coins/images/29850/small/pepe-token.jpeg' },
+    { s:'BTC',  n:'BTC',  name:'Bitcoin',  logo:'https://assets.coingecko.com/coins/images/1/small/bitcoin.png' },
+    { s:'ETH',  n:'ETH',  name:'Ethereum', logo:'https://assets.coingecko.com/coins/images/279/small/ethereum.png' },
+    { s:'XRP',  n:'XRP',  name:'Ripple',   logo:'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png' },
+    { s:'SOL',  n:'SOL',  name:'Solana',   logo:'https://assets.coingecko.com/coins/images/4128/small/solana.png' },
+    { s:'BNB',  n:'BNB',  name:'BNB',      logo:'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png' },
+    { s:'DOGE', n:'DOGE', name:'Dogecoin', logo:'https://assets.coingecko.com/coins/images/5/small/dogecoin.png' },
+    { s:'ADA',  n:'ADA',  name:'Cardano',  logo:'https://assets.coingecko.com/coins/images/975/small/cardano.png' },
+    { s:'PEPE', n:'PEPE', name:'Pepe',     logo:'https://assets.coingecko.com/coins/images/29850/small/pepe-token.jpeg' },
 ];
 
 const EMAS = [
@@ -33,20 +25,19 @@ const EMAS = [
 
 // 전역 변수
 let curCoin = COINS[0];
-let curIv = '1d';
+let curIv = '1d'; 
 let mainChart, rsiChart;
 let candleSeries, volSeries, emaSeries = [], rsiSeries;
-let klineWs = null, tickerWs = null;
+let pollInterval = null; // 실시간 갱신용 타이머
 let candleData = [];
-let lastPx = {};
-let isDemoMode = false; // 데모 모드 여부
 
+// DOM 헬퍼
 const $ = id => document.getElementById(id);
 const fmtP = p => p < 0.0001 ? p.toFixed(8) : p < 0.01 ? p.toFixed(6) : p < 1 ? p.toFixed(4) : p < 100 ? p.toFixed(3) : p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtV = v => v>=1e9?(v/1e9).toFixed(2)+'B':v>=1e6?(v/1e6).toFixed(2)+'M':v>=1e3?(v/1e3).toFixed(2)+'K':v.toFixed(0);
 
 /* ══════════════════════════════════════════════
-   2. 차트 초기화
+   2. 차트 초기화 (Lightweight Charts)
 ══════════════════════════════════════════════ */
 function initCharts() {
     const mainEl = $('main-chart');
@@ -89,7 +80,7 @@ function initCharts() {
         price:lvl, color:'#1a2035', lineWidth:1, lineStyle:LightweightCharts.LineStyle.Dashed, axisLabelVisible:false
     }));
 
-    // 동기화 및 리사이징
+    // 동기화
     mainChart.subscribeCrosshairMove(p => { p.time ? rsiChart.setCrosshairPosition(NaN, p.time, rsiSeries) : rsiChart.clearCrosshairPosition(); });
     rsiChart.subscribeCrosshairMove(p => { p.time ? mainChart.setCrosshairPosition(NaN, p.time, candleSeries) : mainChart.clearCrosshairPosition(); });
     let syncing = false;
@@ -135,163 +126,148 @@ function updateIndicators() {
 }
 
 /* ══════════════════════════════════════════════
-   4. 데이터 매니저 (핵심: 데모 모드 포함)
+   4. 데이터 API (CryptoCompare)
+   무료, 퍼블릭, CORS 문제 없음
 ══════════════════════════════════════════════ */
-async function fetchWithTimeout(url, timeout = 5000) {
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
-    const response = await fetch(url, { signal: controller.signal });
-    clearTimeout(id);
-    return response;
+
+// API 주소 변환 (Binance -> CryptoCompare 방식)
+function getApiParams(coinSymbol, intervalStr) {
+    let endpoint = 'histoday'; // 기본값 1d
+    let limit = 300;
+    
+    // 시간 단위 매핑
+    if(intervalStr.includes('m')) endpoint = 'histominute'; // 1m, 5m...
+    else if(intervalStr.includes('h')) endpoint = 'histohour'; // 1h, 4h...
+    else endpoint = 'histoday'; // 1d, 1w...
+
+    // CryptoCompare는 분봉 API에서 Limit 제한이 있을 수 있어 적절히 조절
+    return { 
+        url: `https://min-api.cryptocompare.com/data/v2/${endpoint}?fsym=${coinSymbol}&tsym=USDT&limit=${limit}`,
+        priceUrl: `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${coinSymbol}&tsyms=USDT`
+    };
 }
 
-// [데모 데이터 생성기]
-function generateMockData() {
-    let res = [];
-    let time = Math.floor(Date.now()/1000) - (1000*60*60*24); // 1일 전부터 시작
-    let price = 50000;
-    for(let i=0; i<1000; i++) {
-        time += 3600; // 1시간 단위
-        let move = (Math.random() - 0.5) * 500;
-        let open = price;
-        let close = price + move;
-        let high = Math.max(open, close) + Math.random() * 50;
-        let low = Math.min(open, close) - Math.random() * 50;
-        price = close;
-        res.push({ time, open, high, low, close, volume: Math.random()*1000 });
-    }
-    return res;
-}
-
-// [데이터 로드 로직]
+// 4-1. 과거 데이터 로드
 async function loadCoin(coin, interval) {
     showLoading();
-    isDemoMode = false;
     $('err-msg').classList.remove('show');
-
-    // 1단계: 바이낸스 공식 API 시도
-    const targetUrl = `${CONFIG.API_URL}?symbol=${coin.s}&interval=${interval}&limit=${CONFIG.LIMIT}`;
-    try {
-        const res = await fetchWithTimeout(targetUrl, 3000);
-        if(!res.ok) throw new Error('Network response not ok');
-        const json = await res.json();
-        processData(json);
-        hideLoading();
-        connectChartStream(coin.s, interval); // 웹소켓 연결
-        return;
-    } catch(e) {
-        console.warn("1차 시도 실패, 2차(프록시) 시도...");
-    }
-
-    // 2단계: 프록시 우회 시도
-    try {
-        const proxyUrl = `${CONFIG.PROXY_URL}${encodeURIComponent(targetUrl)}`;
-        const res = await fetchWithTimeout(proxyUrl, 5000);
-        const json = await res.json();
-        processData(json);
-        hideLoading();
-        connectChartStream(coin.s, interval);
-        return;
-    } catch(e) {
-        console.warn("2차 시도 실패, 데모 모드로 전환...");
-    }
-
-    // 3단계: 최후의 수단 (데모 모드)
-    isDemoMode = true;
-    candleData = generateMockData();
-    renderChart(candleData);
-    hideLoading();
-    $('err-txt').innerText = "DEMO MODE (LIVE FAILED)";
-    $('err-msg').classList.add('show');
-    // 데모용 가짜 웹소켓 시뮬레이션 시작
-    startDemoSimulation();
-}
-
-function processData(json) {
-    if (!Array.isArray(json)) throw new Error("Invalid data");
-    candleData = json.map(d => ({
-        time: d[0]/1000, open: parseFloat(d[1]), high: parseFloat(d[2]), low: parseFloat(d[3]), close: parseFloat(d[4]), volume: parseFloat(d[5])
-    }));
-    renderChart(candleData);
-}
-
-function renderChart(data) {
-    candleSeries.setData(data);
-    volSeries.setData(data.map(d => ({
-        time: d.time, value: d.volume, color: d.close >= d.open ? '#00e87a30' : '#ff3a5c30'
-    })));
-    updateIndicators();
-    mainChart.timeScale().fitContent();
-}
-
-/* ══════════════════════════════════════════════
-   5. 실시간 연결 (웹소켓)
-══════════════════════════════════════════════ */
-function connectChartStream(symbol, interval) {
-    if(isDemoMode) return; // 데모 모드면 실제 연결 안 함
-    if (klineWs) klineWs.close();
-    const url = `${CONFIG.WS_URL}/${symbol.toLowerCase()}@kline_${interval}`;
-    klineWs = new WebSocket(url);
-    klineWs.onmessage = e => {
-        const d = JSON.parse(e.data);
-        if(d.k) updateRealtimeCandle(d.k);
-    };
-}
-
-function updateRealtimeCandle(k) {
-    const t = Math.floor(k.t / 1000);
-    const newCandle = {
-        time: t, open: parseFloat(k.o), high: parseFloat(k.h), low: parseFloat(k.l), close: parseFloat(k.c), volume: parseFloat(k.v)
-    };
-    const last = candleData[candleData.length-1];
-    if (last && last.time === t) candleData[candleData.length-1] = newCandle;
-    else { candleData.push(newCandle); if(candleData.length>2000) candleData.shift(); }
     
-    candleSeries.update(newCandle);
-    volSeries.update({ time: t, value: newCandle.volume, color: newCandle.close >= newCandle.open ? '#00e87a30' : '#ff3a5c30' });
+    // 이전 폴링 중지
+    if(pollInterval) clearInterval(pollInterval);
     
-    // 심플 업데이트 (성능용)
-    const emaLast = calcEMA(candleData, 20); if(emaLast.length) emaSeries[0].update(emaLast[emaLast.length-1]);
-    const rsiLast = calcRSI(candleData, 14); if(rsiLast.length) rsiSeries.update(rsiLast[rsiLast.length-1]);
-}
-
-// [데모 시뮬레이션]
-function startDemoSimulation() {
-    if(klineWs) clearInterval(klineWs); // 기존 타이머 제거 용도
-    klineWs = setInterval(() => {
-        if(!isDemoMode) return;
-        let last = candleData[candleData.length-1];
-        let price = last.close + (Math.random()-0.5)*20;
-        let high = Math.max(last.high, price);
-        let low = Math.min(last.low, price);
-        let updated = {...last, close:price, high:high, low:low, volume:last.volume+10};
+    // API 호출
+    const params = getApiParams(coin.s, interval);
+    try {
+        const res = await fetch(params.url);
+        const json = await res.json();
         
-        candleSeries.update(updated);
-        // 약식 지표 업데이트
-        const rsiVal = 50 + (Math.random()-0.5)*10;
-        rsiSeries.update({time:updated.time, value:rsiVal});
-    }, 1000);
+        if (json.Response === 'Error') throw new Error(json.Message);
+        
+        const rawData = json.Data.Data;
+        
+        // 데이터 포맷팅
+        candleData = rawData.map(d => ({
+            time: d.time,
+            open: d.open,
+            high: d.high,
+            low: d.low,
+            close: d.close,
+            volume: d.volumeto // USDT 볼륨
+        }));
+
+        // 차트 그리기
+        candleSeries.setData(candleData);
+        volSeries.setData(candleData.map(d => ({
+            time: d.time, 
+            value: d.volume, 
+            color: d.close >= d.open ? '#00e87a30' : '#ff3a5c30'
+        })));
+        
+        updateIndicators();
+        mainChart.timeScale().fitContent();
+        
+        hideLoading();
+
+        // 4-2. 실시간 가격 폴링 시작 (2초마다 최신가 가져오기)
+        startPolling(coin.s);
+        
+        // 상태 표시
+        $('ws-badge').classList.add('on');
+        $('ws-text').innerText = "LIVE (POLLING)";
+
+    } catch(e) {
+        console.error(e);
+        $('err-txt').innerText = "데이터 로드 실패 (Free API)";
+        $('err-msg').classList.add('show');
+        hideLoading();
+    }
 }
 
-function connectTickerStream() {
-    // 실제 데이터가 안되면 이것도 막힐 확률 높음. 
-    // 그래도 시도는 함.
-    if (tickerWs) tickerWs.close();
-    const streams = COINS.map(c => `${c.s.toLowerCase()}@ticker`).join('/');
-    tickerWs = new WebSocket(`${CONFIG.WS_URL}/${streams}`);
-    
-    tickerWs.onopen = () => { $('ws-badge').classList.add('on'); $('ws-text').innerText="LIVE"; };
-    tickerWs.onmessage = e => {
-        const d = JSON.parse(e.data);
-        if(d.s === curCoin.s && !isDemoMode) {
-            $('disp-px').innerText = fmtP(parseFloat(d.c));
-            // 나머지 UI 업데이트 생략 (데모 집중)
+// 4-3. 실시간 폴링 (웹소켓 대신 안전한 HTTP 요청 반복)
+function startPolling(symbol) {
+    const fetchPrice = async () => {
+        try {
+            const url = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${symbol}&tsyms=USDT`;
+            const res = await fetch(url);
+            const json = await res.json();
+            
+            const raw = json.RAW[symbol].USDT;
+            const p = raw.PRICE;
+            const P = raw.CHANGEPCT24HOUR;
+            const h = raw.HIGH24HOUR;
+            const l = raw.LOW24HOUR;
+            const v = raw.VOLUME24HOURTO; // USDT Volume
+
+            // UI 업데이트
+            const colorClass = P >= 0 ? 'up' : 'dn';
+            
+            $('disp-px').innerText = fmtP(p);
+            $('disp-px').className = `px-val ${colorClass}`;
+            
+            $('disp-chg').innerText = (P>=0?'+':'') + P.toFixed(2) + '%';
+            $('disp-chg').className = `s-val ${colorClass}`;
+            
+            $('disp-hi').innerText = fmtP(h);
+            $('disp-lo').innerText = fmtP(l);
+            $('disp-vol').innerText = fmtV(v);
+
+            // 차트 캔들 업데이트
+            updateLastCandle(p);
+
+        } catch(e) {
+            // 조용히 실패 (다음 틱에 재시도)
         }
     };
+
+    fetchPrice(); // 즉시 실행
+    pollInterval = setInterval(fetchPrice, 2000); // 2초마다 실행
+}
+
+// 차트의 마지막 캔들을 현재가로 움직이게 하기
+function updateLastCandle(currentPrice) {
+    if(candleData.length === 0) return;
+    
+    let last = candleData[candleData.length - 1];
+    
+    // 현재 시간이 마지막 캔들 시간보다 훨씬 지났으면 새 캔들 생성 로직이 필요하지만,
+    // 간단한 폴링 모드에서는 마지막 캔들의 Close만 업데이트하여 움직임 표현
+    const updated = {
+        ...last,
+        close: currentPrice,
+        high: Math.max(last.high, currentPrice),
+        low: Math.min(last.low, currentPrice)
+    };
+    
+    candleData[candleData.length - 1] = updated;
+    candleSeries.update(updated);
+    
+    // 지표 업데이트 (가벼운 연산)
+    const emaLast = calcEMA(candleData, 20); 
+    if(emaLast.length) emaSeries[0].update(emaLast[emaLast.length-1]);
 }
 
 /* ══════════════════════════════════════════════
-   6. UI 이벤트 및 실행
+   5. UI 이벤트
 ══════════════════════════════════════════════ */
 function showLoading() { $('loading').classList.remove('hide'); }
 function hideLoading() { $('loading').classList.add('hide'); }
@@ -310,9 +286,10 @@ function changeCoin(c) {
 }
 function setIv(iv, btn) { curIv=iv; document.querySelectorAll('.iv').forEach(b=>b.classList.remove('act')); btn.classList.add('act'); loadCoin(curCoin, iv); }
 symBtn.addEventListener('click', ()=>{ dd.classList.toggle('show'); symBtn.classList.toggle('open'); });
+document.addEventListener('click',e=>{if(!symBtn.contains(e.target)){dd.classList.remove('show');symBtn.classList.remove('open');}});
 
+// 실행
 requestAnimationFrame(() => {
     initCharts();
-    connectTickerStream();
     loadCoin(curCoin, curIv);
-});11
+});
